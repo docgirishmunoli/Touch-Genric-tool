@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouchCommanderGeneric", "TouchCommanderGeneric\TouchCommanderGeneric.csproj", "{127B4F21-ABB7-4335-A454-6AA3B0D0B882}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APIDebugger", "APIDebugger\APIDebugger.csproj", "{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		DebugFull|x86 = DebugFull|x86
+		Release|x86 = Release|x86
+		ReleaseFull|x86 = ReleaseFull|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.Debug|x86.ActiveCfg = Debug|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.Debug|x86.Build.0 = Debug|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.DebugFull|x86.ActiveCfg = DebugFull|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.DebugFull|x86.Build.0 = DebugFull|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.Release|x86.ActiveCfg = Release|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.Release|x86.Build.0 = Release|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.ReleaseFull|x86.ActiveCfg = ReleaseFull|x86
+		{127B4F21-ABB7-4335-A454-6AA3B0D0B882}.ReleaseFull|x86.Build.0 = ReleaseFull|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.Debug|x86.ActiveCfg = Debug|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.Debug|x86.Build.0 = Debug|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.DebugFull|x86.ActiveCfg = DebugFull|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.DebugFull|x86.Build.0 = DebugFull|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.Release|x86.ActiveCfg = Release|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.Release|x86.Build.0 = Release|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.ReleaseFull|x86.ActiveCfg = ReleaseFull|x86
+		{8BCA5D0D-EDAA-479D-8B22-9B323DF8398A}.ReleaseFull|x86.Build.0 = ReleaseFull|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

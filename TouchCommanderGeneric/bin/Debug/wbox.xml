@@ -1,0 +1,1150 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>wbox</name>
+    </assembly>
+    <members>
+        <member name="T:wbox.CCB2Protocol.Commands">
+            <summary>
+            Current public list of available commands
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.NODE_ALIVE">
+            <summary>
+            PC->CCB2
+            This command can be used by the PC to ensure the CCB2 still alive.
+            CCB2 will return ACK if functional.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.CONFIGURATION">
+            <summary>
+            CCB2->PC or PC->CCB2
+            When Sent from PC to CCB2 configures the CCB.
+            When Sent from the CCB2 to the PC means publishing the current configuration on CCB2.
+                DATA2: Defines the protocol in the device side of the CCB2.
+                        0 = none
+                        1 = WIDE
+                        2 = WIN
+                        3 = WMSP (To be implemented in order to support Bootloader as PA)
+                DATA3: Defines the CCB2 address, values from 0 to 14 are acceptable.
+                DATA4: Defines the CCB2 node action:
+                        1 = Sniffer (WIDE)
+                        2 = Simple Node (WIDE) / Salve (WMSP)
+                        3 = Arbiter (WIDE) / Master (WMSP)
+                        4 = Service (WIDE) / Special
+                DATA5toN: Polling List for WIDE and WMSP
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_CURRENT_CONFIGURATION">
+            <summary>
+            PC->CCB2 only
+            Send from the PC to the CCB2 to request the current configuration being used by the CCB2.
+            CCB2 will return the CONFIGURATION message.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.DATA_FLOW">
+            <summary>
+            CCB2->PC or PC->CCB2
+            Send from PC to the CCB2 to set the Data Flow.
+            When Sent from CCB2 to PC to publish the current Data Flow configuration
+                DATA2: Flow
+                    0: Data OFF
+                    1: Data ON
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_DATA_FLOW">
+            <summary>
+            PC->CCB2 only
+            Send by the PC to the CCB2 to request the Flow information.
+            No payload required.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.DATA_FILTER">
+            <summary>
+            CCB2->PC or PC->CCB2
+            Send from PC to the CCB2 to set the Data Filter.
+            When Sent from CCB2 to PC to publish the current Data Filter configuration
+                DATA2: Flow
+                    0: Data Filter OFF
+                    1: Data Filter ON
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_DATA_FILTER">
+            <summary>
+            PC->CCB2 only
+            Send by the PC to the CCB2 to request the Data Filter information.
+            No payload required.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.BUS_HARDWARE_CONNECTION">
+            <summary>
+            CCB2->PC or PC->CCB2
+            This package is used from the PC to the CCB2 to set the hardware connection on the bus.
+            This package is used from the CCB2 to the PC to publish the current hardware connection on the bus.
+                DATA2: Connection
+                    0: Regular Uart Translator (WIN/WIDE)
+                    1: Serial TX/RX expecting echo
+                    2: Serial TX/RX skipping echo
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_BUS_HARDWARE_CONNECTION">
+            <summary>
+            PC->CCB2 only
+            This package is used from the PC To the CCB to request the hardware connection on the bus.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_BUS_STATUS">
+            <summary>
+            PC->CCB2 only
+            Send by the PC to the CCB2 to request the bus status information.
+            No Payload required
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.PUBLISH_BUS_STATUS">
+            <summary>
+            CCB2->PC only
+            Send from the CCB2 to the PC to inform the status of each node in the system.
+                DATA2: Node 0 Status
+                DATA3: Node 1 Status
+                ...
+                DATA16 Node 14 Status
+                The status can be:
+                        0: Not configured.
+                        1: Present.
+                        2: Configured but not present.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_BUS_ATTACHMENT_STATE">
+            <summary>
+            PC->CCB2 only
+            Send by the PC to the CCB2 to request the bus attachment state.
+            No Payload required
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.PUBLISH_BUS_ATTACHMENT_STATE">
+            <summary>
+            CCB2->PC only
+            Send from the CCB2 to the PC to inform the bus attachment state.
+                DATA2: State
+                The state can be:
+                        0: Not attached to bus.
+                        1: Attached to bus.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.SEND_MESSAGE">
+            <summary>
+            CCB2->PC or PC->CCB2
+            This package is used from PC to CCB2 to send a message into the bus.
+            This package is used from CCB2 to the PC to report a message from the bus.
+            Every time the PC sends a Message to the Bus this message returns as a message coming from the bus.
+                DATA2: Source (0 to 14)
+                DATA3: Destination (0 to 14 for specific address or 15 for broadcast)
+                DATA4: SAP
+                DATA5: Payload B0
+                DATA6: Payload B1
+                ...
+                DATA(n+5): Payload Bn
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.BROKEN_MESSAGE">
+            <summary>
+            CCB2->PC only
+            This package is used from CCB2 to PC to report a broken package.
+                DATA2: Protocol:
+                    0 = none
+                    1 = WIDE
+                    2 = WIN
+                    3 = WMSP (To be implemented in order to support Bootloader as PA)
+                DATA3: Destination (0 to 14 for specific address or 15 for broadcast)
+                DATA4: SAP
+                DATA5: Payload B0
+                DATA6: Payload B1
+                ...
+                DATA(n+5): Payload Bn
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.BUS_BREAK">
+            <summary>
+            CCB2->PC only
+            This package is used from CCB2 to PC to report a bus break.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.BUS_ACK">
+            <summary>
+            CCB2->PC only
+            This package is used from CCB2 to PC to report a bus ACK 
+            which only happen in certain (WIN) protocol when the filter is disabled.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REPEATED_MESSAGE">
+            <summary>
+            CCB2->PC only
+            This package is used from CCB2 to the PC to report a repeated message from the bus.
+                DATA2: Source (0 to 14)
+                DATA3: Destination (0 to 14 for specific address or 15 for broadcast)
+                DATA4: SAP
+                DATA5: Payload B0
+                DATA6: Payload B1
+                ...
+                DATA(n+5): Payload Bn
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.PUBLISH_KEY_EVENT">
+            <summary>
+            CCB2->PC only
+            This package is used from CCB2 to PC to publish a key event
+            DATA2: Event
+                0: Key Clicked
+                2: Key Hold
+                4: Key Stuck
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_BUS_HARDWARE_TEST">
+            <summary>
+            PC->CCB2 only
+            This package is used from PC to CCB2 to request the system to execute a hardware test in on of the BUS connections.
+            This command can be ACK or NAK depending on what connection the system is using, if the request is to test the connection actually being used it will return NAK.
+            In order to test a Connection the system must be switched to the other connection using the command <see cref="F:wbox.CCB2Protocol.Commands.BUS_HARDWARE_CONNECTION"/>.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_BUS_HARDWARE_TEST_STATE">
+            <summary>
+            PC->CCB2 only
+            This package is used from PC to CCB2 to request the state of the BUS Hardware test machine.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.PUBLISH_BUS_HARDWARE_TEST_STATE">
+            <summary>
+            CCB2->PC only
+            This package is used from CCB2 to PC to publish the current state of the Bus hardware test state machine.
+            DATA2: Connection
+            	0: Regular Uart Translator
+            	1: Serial TX/RX expecting echo or not
+            DATA3: State
+            	0: BUSHARDWARE_TEST_STATE_IDLE,
+                1: BUSHARDWARE_TEST_STATE_SET_HIGH,
+            	2: BUSHARDWARE_TEST_STATE_TEST_HIGH,
+            	3: BUSHARDWARE_TEST_STATE_TEST_LOW,
+                4: BUSHARDWARE_TEST_STATE_TEST_PASS,
+                5: BUSHARDWARE_TEST_STATE_TEST_FAIL
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.SET_PPW_PROTOCOL">
+            <summary>
+            PC->CCB2 only
+            Set protocol to PPW (No Ack will be received)
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.REQUEST_VERSION">
+            <summary>
+            PC->CCB2 only
+            This package is used from PC to CCB2 to request the current version information.
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.PUBLISH_VERSION">
+            <summary>
+            CCB2->PC only
+            This package is used from the CCB2 to the PC to publish the version information.
+                DATA2: SW Major
+                DATA3: SW Minor
+                DATA4: SW Test
+                DATA5: HW Major
+                DATA6: HW Minor
+                DATA7: HW Test
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.SEND_DEVICE_COMMAND">
+            <summary>
+            PC->CCB2 only
+            This package is used from PC to CCB2 to issue a command to the device
+            	DATA2 : Command
+            		0: Reset
+            		1: Factory Reset
+            		2: Test LEDS
+            		3: Generate a wake up signal on the Bus (100ms)
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.PUBLISH_ERRORS">
+            <summary>
+            CCB2->PC only
+            This package is used from the CCB2 to the PC to indicate errors
+            	DATA2: Error1
+            	DATA3: Error2
+            	...
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.Commands.ACK">
+            <summary>
+            CCB2->PC only
+            This package is used from the CCB2 to the PC to acknowledge received commands.
+                DATA2: Counter (refers to the counter of the received message)
+                DATA3: Command (refers to the command being acknowledged)
+                DATA4: Reason Code
+                    0: Accepted
+                    1: Busy
+                    2: Rejected
+                    3: reserved
+                    4: Unsupported
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.WMSP_WBOX_Node">
+            <summary>
+            Address of WBox(CCB2) node in the wmsp packet when CCB2 Protocol is used
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.WMSP_PC_Node">
+            <summary>
+            Address of PC node in the wmsp packet when CCB2 Protocol is used
+            </summary>
+        </member>
+        <member name="F:wbox.CCB2Protocol.SAP">
+            <summary>
+            CCB2 Protocol SAP
+            </summary>
+        </member>
+        <member name="P:wbox.CCB2ProtocolMessage.Counter">
+            <summary>
+            Get or Set the message counter. It is incremented on every message send and/or received
+            </summary>
+        </member>
+        <member name="P:wbox.CCB2ProtocolMessage.RawCommand">
+            <summary>
+            Get or Set the raw byte command of the current message
+            </summary>
+        </member>
+        <member name="P:wbox.CCB2ProtocolMessage.Command">
+            <summary>
+            Get or Set the command from the enum list
+            </summary>
+        </member>
+        <member name="P:wbox.CCB2ProtocolMessage.Data">
+            <summary>
+            Get or Set the Data of the received message
+            </summary>
+        </member>
+        <member name="M:wbox.CCB2ProtocolMessage.ToWMSPPayload">
+            <summary>
+            Convert CCB2 message into a WMSP payload array
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.CCB2ProtocolMessage.ParsePacketWMSP(WmspService.PackageWMSP)">
+            <summary>
+            Get a Wmsp packet and set into the CCB2 message.
+            Returns false if is not a CCB2 message
+            </summary>
+            <param name="wmsp_pack">WMSP Pack to be parsed</param>
+            <returns></returns>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings">
+            <summary>
+            Current Device Message available strings
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.ACK">
+            <summary>
+            Acknowledge a received command
+            <para>
+            Message: "ACK"
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.NACK">
+            <summary>
+            Not Acknowledge a received command
+            <para>
+            Message: "NACK: {0}"
+            </para>
+            {0} : reason
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BREAK">
+            <summary>
+            Break received in the Wide Bus
+            <para>
+            Message: "&lt;BREAK&gt;"
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BUS_ACK">
+            <summary>
+            Ack received in the Win Bus
+            <para>
+            Message: "&lt;ACK&gt;"
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.NodeMode">
+            <summary>
+            Node Mode.
+            <para>
+            Message: "Node Mode: {0}, Func Mode: {1}, Address: {2}, Filter: {3}"
+            </para>
+            <para>
+            {0} : Current Node mode "Sniffer, Simple Node, Arbiter or Service"
+            {1} : Function Mode Byte, check FuncModeBits enum
+            {2} : Current Device Address
+            {3} : Filter - Extra info [obsolete]
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.Configuration">
+            <summary>
+            Configuration (Only in CCB2 Protocol)
+            <para>
+            Message: "Configuration: Protocol: {0}, Address: {1}, Node Mode: {2}, Poll List: {3}"
+            </para>
+            <para>
+            {0} : Current WBOX Protocol "NONE, WIDE, WIN or WMSP"
+            {1} : Current Device Address
+            {2} : Current Node mode "Sniffer, Simple Node, Arbiter or Service"
+            {3} : list of the Nodes in the Polling List in Hex and comma separated (ie. 01,0F)
+            </para>
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.FuncModeBits">
+            <summary>
+            Func Mode bit position in the NodeMode message
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.FuncModeBits.FILTER_ON">
+            <summary>
+            Bit 0 true if Filter is on
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.FuncModeBits.CRC_ON">
+            <summary>
+            Bit 1 true if CRC check is on
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.FuncModeBits.RAW_ON">
+            <summary>
+            Bit 2 true if Data is on
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.FuncModeBits.TIMESTAMP_ON">
+            <summary>
+            Bit 3 true if Time Stamp is on (not used)
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.FuncModeBits.BROADCAST_FILTER_ON">
+            <summary>
+            Bit 4 true if Broadcast Filter is on
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.SoftwareVersion">
+            <summary>
+            Software Version
+            <para>
+            Message: "DLE Software Version: {0} {1}"
+            </para>
+            <para>
+            {0} : Device Software version string - Old versions only contains 1 number, new versions contains 3 (i.e. n1,n2,n3)
+            {1} : Device Hardware version string - CCB1 will be empty string, CCB2 versions contains 3 (i.e. n1,n2,n3)
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.NodeList">
+            <summary>
+            Current Node list set on the Device
+            <para>
+            Message: "Node List: {0}"
+            </para>
+            <para>
+            {0} : list of the Nodes in the Node List in Hex and comma separated (ie. 01,0F)
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.PollingList">
+            <summary>
+            Current Polling list set on the Device.
+            <para>
+            Message: "Polling List: {0}"
+            </para>
+            <para>
+            {0} : list of the Nodes in the Polling List in Hex and comma separated (ie. 01,0F)
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.Command">
+            <summary>
+            Command sent to Device
+            <para>
+            Message: "Command: {0}"
+            </para>
+            <para>
+            {0} : Command sent to the device, 0x(Byte) if the command does not exist
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BrokenMessage">
+            <summary>
+            Reported Broken Message
+            <para>
+            Message: "Broken Message Protocol: {0}, Message: {1}"
+            </para>
+            <para>
+            {0} : Protocol of the Broken Message (NONE, WIDE, WIN, WMSP)
+            {1} : Data Bytes of the broken message in Hex and comma separated (ie. 01,0F)
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.RepeatedMessage">
+            <summary>
+            Reported Repeated Message
+            <para>
+            Message: "Repeated Message: {0}"
+            </para>
+            <para>
+            {0} : Simple Whirlpool Packet in Hex and comma separated (SOURCE, DESTINATION, SAP, DATA0..N)
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.SerialResponseData">
+            <summary>
+            SerialResponse Data when the current port is Opened or closed
+            <para>
+            Message: "SerialResponseData: {0}"
+            </para>
+            <para>
+            {0} : COM# OPEN or COM# Port closed
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.DataFlowState">
+            <summary>
+            Current Data Flow State
+            <para>
+            Message: "Data Flow: {0}"
+            </para>
+            <para>
+            {0} : ON or OFF
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.DataFilterState">
+            <summary>
+            Current Data Filter State
+            <para>
+            Message: "Data Filter: {0}"
+            </para>
+            <para>
+            {0} : ON or OFF
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BusStatus">
+            <summary>
+            Current Bus Status
+            <para>
+            Message: "Bus Status: {0}"
+            </para>
+            <para>
+            {0} : list of the Nodes Statuses in <see cref="T:wbox.DeviceMessageStrings.NODE_STATUS"/> Enum string and comma separated (ie. PRESENT,PRESENT,NOT_PRESENT,...up to node14 )
+            </para>
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.NODE_STATUS">
+            <summary>
+            Current enumeration of available node status
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.NODE_STATUS.NOT_PRESENT">
+            <summary>
+            Node not present in the bus.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.NODE_STATUS.PRESENT">
+            <summary>
+            Node present in the bus.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.KeyEvent">
+            <summary>
+            Key Event
+            <para>
+            Message: "Key Event: {0}"
+            </para>
+            <para>
+            {0} : One of the enum items of <see cref="T:wbox.DeviceMessageStrings.KEY_EVENT_LIST"/> enumeration. (i.e CLICK,HOLD,STUCK)
+            </para>
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.KEY_EVENT_LIST">
+            <summary>
+            Current enumeration of available node status
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.KEY_EVENT_LIST.CLICK">
+            <summary>
+            Key was clicked (pressed and released)
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.KEY_EVENT_LIST.HOLD">
+            <summary>
+            Key Holded for 3 seconds.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.KEY_EVENT_LIST.STUCK">
+            <summary>
+            The key is stuck
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BusAttachmentState">
+            <summary>
+            Current Bus Attachment State
+            <para>
+            Message: "Bus Attachment State: {0}"
+            </para>
+            <para>
+            {0} : True or False (true meaning Attached)
+            </para>
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BusHardwareConnection">
+            <summary>
+            Current Bus Hardware Connection
+            <para>
+            Message: "Bus Hardware Connection: {0} Baud: {1}"
+            </para>
+            <para>
+            {0} : One of the enum items of <see cref="T:wbox.DeviceMessageStrings.HARDWARE_CONNECTION"/> enumeration (i.e. REGULAR_UART_TRANSLATOR, SERIAL_TX_RX_WITH_ECHO or SERIAL_TX_RX_WITHOUT_ECHO)
+            {1} : One of the enum items of <see cref="T:wbox.DeviceMessageStrings.HARDWARE_BAUDRATE"/> enumeration (i.e. B9600..)
+            </para>
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.HARDWARE_CONNECTION">
+            <summary>
+            Current enumeration of available hardware connections
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.HARDWARE_CONNECTION.REGULAR_UART_TRANSLATOR">
+            <summary>
+            Regular 1 wire uart translator (Wide/Win driver) output
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.HARDWARE_CONNECTION.SERIAL_TX_RX_WITH_ECHO">
+            <summary>
+            Serial Tx/Rx output expecting echo
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.HARDWARE_CONNECTION.SERIAL_TX_RX_WITHOUT_ECHO">
+            <summary>
+            Serial Tx/Rx output skipping the echo check (used for IR connection)
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.HARDWARE_CONNECTION.INVALID_CONNECTION">
+            <summary>
+            Invalid Connection
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.HARDWARE_BAUDRATE">
+            <summary>
+            Current enumeration of available hardware baud rate
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BusHardwareTest">
+            <summary>
+            Current Bus Hardware Test State
+            <para>
+            Message: "Bus Hardware Test: {0} State: {1}"
+            </para>
+            <para>
+            {0} : One of the enum items of <see cref="T:wbox.DeviceMessageStrings.HARDWARE_CONNECTION"/> enumeration (i.e. REGULAR_UART_TRANSLATOR, SERIAL_TX_RX_WITH_ECHO or SERIAL_TX_RX_WITHOUT_ECHO)
+            {1} : One of the enum items of <see cref="T:wbox.DeviceMessageStrings.BUSHARDWARE_TEST_STATE_TYPE"/> enumeration (i.e. IDLE,SET_HIGH,...)
+            </para>
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.BUSHARDWARE_TEST_STATE_TYPE">
+            <summary>
+            Current enumeration of available bus hardware test state
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BusError">
+            <summary>
+            Bus Error. Reported when any error in the bus happen.
+            <para>
+            Message: "Bus Error: {0}"
+            </para>
+            <para>
+            {0} : One of the enum items of <see cref="!:ERROR"/> enumeration.
+            </para>
+            </summary>
+        </member>
+        <member name="T:wbox.DeviceMessageStrings.BUS_ERROR">
+            <summary>
+            Current enumeration of available Errors
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BUS_ERROR.NO_ERROR">
+            <summary>
+            No error.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BUS_ERROR.WIN_BUFFER_NOT_ALLOCATED">
+            <summary>
+            Win buffer not allocated.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BUS_ERROR.WIN_INVALID_SIZE">
+            <summary>
+            Win message with an invalid size.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BUS_ERROR.WIN_INVALID_ADDRESS">
+            <summary>
+            Win message with an invalid address.
+            </summary>
+        </member>
+        <member name="F:wbox.DeviceMessageStrings.BUS_ERROR.WIN_FAIL">
+            <summary>
+            Win failure.
+            </summary>
+        </member>
+        <member name="M:wbox.DeviceMessageStrings.GetDeviceStringParameters(System.String,System.String)">
+            <summary>
+            Get the {#} from the Device Strings in a List of strings.
+            </summary>
+            <param name="devicestring">Device String Pattern (Constants from this class).</param>
+            <param name="received_msg">Received message.</param>
+            <returns>A list of strings with given parameters.</returns>
+        </member>
+        <member name="M:wbox.DeviceMessageStrings.CheckDeviceString(System.String,System.String)">
+            <summary>
+            Checks the if device string given match the device message received.
+            </summary>
+            <param name="devicestring">The device string to compare.</param>
+            <param name="received_msg">The received message to be compared.</param>
+            <returns><c>true</c> if the message is the given device string</returns>
+        </member>
+        <member name="M:wbox.PackageWBOX.SetMessageType(System.Boolean)">
+            <summary>
+            Set true if it is a Wide/Win message, false if is a Device Message
+            </summary>
+            <param name="type"></param>
+        </member>
+        <member name="T:wbox.WBoxService.PC_PROTOCOL">
+            <summary>
+            Enum the available protocols for the WBoxService
+            </summary>
+        </member>
+        <member name="T:wbox.WBoxService.WBOX_PROTOCOL">
+            <summary>
+            Enum Available WBOX protocols (CCB2 only)
+            </summary>
+        </member>
+        <member name="T:wbox.WBoxService.WBOX_MODE">
+            <summary>
+            Enum available WBOX modes
+            </summary>
+        </member>
+        <member name="P:wbox.WBoxService.wmsp">
+            <summary>
+            Underlying WMSP/PPW handler
+            </summary>
+        </member>
+        <member name="F:wbox.WBoxService.wbox_pc_protocol">
+            <summary>
+            WBoxService protocol
+            </summary>
+        </member>
+        <member name="P:wbox.WBoxService.PCProtocol">
+            <summary>
+            Get current Set PC protocol
+            </summary>
+        </member>
+        <member name="P:wbox.WBoxService.WBOXProtocol">
+            <summary>
+            Get current Set Wide Box Bus protocol
+            </summary>
+        </member>
+        <member name="F:wbox.WBoxService.wbox_protocol">
+            <summary>
+            Protocol to set in Wbox (CCB2 only feature)
+            </summary>
+        </member>
+        <member name="F:wbox.WBoxService.changeProtocolWait">
+            <summary>
+            Semaphore to wait for a protocol change (have to reopen the COM port)
+            </summary>
+        </member>
+        <member name="P:wbox.WBoxService.PPWCounter">
+            <summary>
+            PPW Message counter
+            </summary>
+        </member>
+        <member name="P:wbox.WBoxService.CCB2Counter">
+            <summary>
+            CCB2 Message counter
+            </summary>
+        </member>
+        <member name="M:wbox.WBoxService.EnableRawDataLog(System.Boolean)">
+            <summary>
+            Enable logging Raw state machine data into a log file
+            </summary>
+            <param name="enable"></param>
+        </member>
+        <member name="M:wbox.WBoxService.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:wbox.WBoxService"/> class.
+            </summary>
+        </member>
+        <member name="M:wbox.WBoxService.openPort(System.String,wbox.WBoxService.PC_PROTOCOL,System.Int32)">
+            <summary>
+            Opens the port.
+            </summary>
+            <param name="port">The port.</param>
+            <param name="protocol">The protocol.</param>
+            <param name="interval">The interval.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.reopenPort(System.String,wbox.WBoxService.PC_PROTOCOL)">
+            <summary>
+            Reopens the port.
+            </summary>
+            <param name="port">The port.</param>
+            <param name="protocol">The protocol.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.closePort">
+            <summary>
+            Closes the port.
+            </summary>
+        </member>
+        <member name="P:wbox.WBoxService.PortName">
+            <summary>
+            Gets the name of the port used in this instance.
+            </summary>
+            <value>
+            The name of the port.
+            </value>
+        </member>
+        <member name="M:wbox.WBoxService.WaitProtocolChange(System.Int32)">
+            <summary>
+            Wait for the change of protocols to happen
+            </summary>
+            <param name="miliseconds"></param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.SetDFUMode">
+            <summary>
+            Send DFU mode command over CCB
+            <para>Remember that after this the CCB will not respond to PPW commands anymore</para>
+            </summary>
+        </member>
+        <member name="F:wbox.WBoxService.ProtocolPortSpeed">
+            <summary>
+            The protocol port speed dictionary
+            </summary>
+        </member>
+        <member name="M:wbox.WBoxService.setProtocol(wbox.WBoxService.PC_PROTOCOL,System.Boolean,System.Double)">
+            <summary>
+            Sets the PC protocol.
+            </summary>
+            <param name="protocol">The protocol.</param>
+            <param name="blocking">if set to <c>true</c> [blocking].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setWBoxProtocol(wbox.WBoxService.WBOX_PROTOCOL,System.Boolean,System.Double)">
+            <summary>
+            Set the Wbox protocol (CCB2 only feature)
+            </summary>
+            <param name="protocol">The protocol.</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.SetAddress(System.Byte,System.Boolean,System.Double)">
+            <summary>
+            Sets the address.
+            </summary>
+            <param name="address">The address.</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setPollingList(System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Sets the polling list.
+            </summary>
+            <param name="nlist">The nlist.</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setNodeList(System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Sets the node list.
+            </summary>
+            <param name="nlist">The nlist.</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setWBOXMode(wbox.WBoxService.WBOX_MODE,System.Boolean,System.Double)">
+            <summary>
+            Sets the wbox mode.
+            </summary>
+            <param name="mode">The mode.</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setDataONOFF(System.Boolean,System.Boolean,System.Double)">
+            <summary>
+            Sets the data onoff.
+            </summary>
+            <param name="dataonoff">if set to <c>true</c> [dataonoff].</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setCRCCheck(System.Boolean,System.Boolean,System.Double)">
+            <summary>
+            Sets the CRC check.
+            </summary>
+            <param name="crc_check">if set to <c>true</c> [crc_check].</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.setFilter(System.Boolean,System.Boolean,System.Double)">
+            <summary>
+            Sets the filter.
+            </summary>
+            <param name="filter">if set to <c>true</c> [filter].</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.getFilter">
+            <summary>
+            Gets the filter state.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.requestInfo">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:wbox.WBoxService.sendCommand(System.Byte,System.Byte[])">
+            <summary>
+            Sends the command.
+            </summary>
+            <param name="cmd">The command.</param>
+            <param name="data">The data.</param>
+        </member>
+        <member name="M:wbox.WBoxService.sendCommand(System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a command through PPW/CCB2Protocol
+            use SetPCProtocol to change protocols (bus protocol can be configured using this)
+            </summary>
+            <param name="cmd">The command.</param>
+            <param name="data">The data.</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.SendPPWCommand(System.Boolean,System.Double,System.Collections.Generic.List{System.Byte})">
+            <summary>
+            Sends the PPW command.
+            </summary>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <param name="datapkg">The datapkg.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.SendCCB2Command(System.Boolean,System.Double,wbox.CCB2ProtocolMessage)">
+            <summary>
+            Sends the ccb2 command.
+            </summary>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <param name="msg">The MSG.</param>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.sendMessage(System.Byte,System.Byte,System.Byte[])">
+            <summary>
+            Send a message
+            </summary>
+            <param name="destination"></param>
+            <param name="SAP"></param>
+            <param name="sdu"></param>
+        </member>
+        <member name="M:wbox.WBoxService.sendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a message and wait for confirmation if blocking Exection id true
+            Only one blocking call at time.
+            if other thread is waiting for a blockingExecution it will hold the thread until that message was Acknowledge
+            </summary>
+            <param name="destination"></param>
+            <param name="SAP"></param>
+            <param name="sdu"></param>
+        </member>
+        <member name="M:wbox.WBoxService.numIncomingMessages">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:wbox.WBoxService.getMessage">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:wbox.NamespaceDoc">
+            <summary>
+            Helper that do all the handling on Device translations.
+            </summary>
+        </member>
+        <member name="M:WmspService.PackagePPW.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:WmspService.PackagePPW"/> class.
+            </summary>
+        </member>
+        <member name="M:WmspService.PackagePPW.checkCRC">
+            <summary>
+            Checks the CRC.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WmspService.PackagePPW.setFULLPackage(System.Collections.Generic.List{System.Byte})">
+            <summary>
+            Sets the full package.
+            </summary>
+            <param name="data">The data.</param>
+            <returns></returns>
+        </member>
+        <member name="M:WmspService.PackagePPW.setDataPackage(System.Collections.Generic.List{System.Byte})">
+            <summary>
+            Sets the data package.
+            </summary>
+            <param name="data">The data.</param>
+        </member>
+        <member name="M:WmspService.ByteExt.Bit(System.Byte,System.Byte)">
+            <summary>
+            return true if the bit is 1
+            </summary>
+            <param name="data"></param>
+            <param name="bit"></param>
+            <returns></returns>
+        </member>
+        <member name="P:WmspService.Wmsp.MaxIncomingListSize">
+            <summary>
+            Maximum that the Internal FIFO can hold
+            If the Internal list past this count it will remove 25% of the old messages
+            Default value is 70 000 packages
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.NextStateMachineNumber">
+            <summary>
+            Get the next state machine to operate
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.PPWStateMachines">
+            <summary>
+            Get the PPWStatemachine list
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.CurrentPPWStateMachine">
+            <summary>
+            Alias to PPWStateMachines[(int)currentStateMachineNumber]
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.NextPPWStateMachine">
+            <summary>
+            Get the next state machine available (use it for peeking, to move CurrentPPWStateMachine just increment CurrentStateMachineNumber)
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.WMSPStateMachines">
+            <summary>
+            Get WMSP State Machine list
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.CurrentWMSPStateMachine">
+            <summary>
+            Alias to WMSPStateMachines[(int)currentStateMachineNumber]
+            </summary>
+        </member>
+        <member name="P:WmspService.Wmsp.NextWMSPStateMachine">
+            <summary>
+            Get the next state machine available (use it for peeking, to move CurrentPPWStateMachine just increment CurrentStateMachineNumber)
+            </summary>
+        </member>
+        <member name="F:WmspService.Wmsp.CommandSent">
+            <summary>
+            Dictionary of counter and command sent
+            </summary>
+        </member>
+        <member name="M:WmspService.Wmsp.Finalize">
+            <summary>
+            Destructor makes sure that the serial port is close when diposing this object
+            </summary>
+        </member>
+        <member name="M:WmspService.Wmsp.getSizeOutgoingBuffer">
+            <summary>
+            Gets the size outgoing buffer.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WmspService.Wmsp.queueMessage(System.Byte,System.Byte,System.Byte,System.Collections.Generic.List{System.Byte})">
+            <summary>
+            Queues the message.
+            </summary>
+            <param name="destination">The destination.</param>
+            <param name="source">The source.</param>
+            <param name="sap">The sap.</param>
+            <param name="sdu">The sdu.</param>
+        </member>
+        <member name="M:WmspService.Wmsp.getSizeIcomingBuffer">
+            <summary>
+            Gets the size icoming buffer.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WmspService.Wmsp.getMessageIcomingBuffer">
+            <summary>
+            Gets the message icoming buffer.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WmspService.Wmsp.setProtocol(WmspService.Wmsp.PROTOCOL)">
+            <summary>
+            Set and Fix the protocol to be sending messages (don't allow to send messages in both protocols anymore)
+            </summary>
+            <param name="prot"></param>
+        </member>
+        <member name="M:WmspService.Wmsp.resetProtocol">
+            <summary>
+            Allows to send message in both protocols until setProtocol is called
+            </summary>
+        </member>
+        <member name="M:WmspService.Wmsp.SetSerial(System.String,System.Int32)">
+            <summary>
+            Function that initializes the Serial port at a given speed
+            </summary>
+            <param name="port"></param>
+            <param name="speed"></param>
+            <returns></returns>
+        </member>
+        <member name="M:WmspService.Wmsp.SetPackagePPW">
+            <summary>
+            Get the buffer of current state machine and add to the ppw Incoming buffer and clean current state machine buffer
+            </summary>
+        </member>
+        <member name="M:WmspService.Wmsp.Dispose">
+            <summary>
+            Dispose current disposable objects from this object
+            </summary>
+        </member>
+        <member name="M:WmspService.Wmsp.Dispose(System.Boolean)">
+            <summary>
+            Di
+            </summary>
+            <param name="disposing"></param>
+        </member>
+    </members>
+</doc>

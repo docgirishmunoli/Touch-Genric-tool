@@ -1,0 +1,372 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+using WideBoxLib;
+
+namespace TouchCommanderGenericNamespace
+{
+    public class TouchCommanderMainView : Panel
+    {
+        TouchCommanderController control;
+        Dictionary<string, TouchCommanderTabBase> page_dict;
+
+        private Label lbHMINodeId;
+        private NumericUpDown numHMINodeId;
+        private Button btnConnectToHMI;
+        private Button btnEnableTouchConfig;
+        private TabControl tabs;
+
+        private BackgroundWorker taskWaitForHMI;
+        private BackgroundWorker taskHMIConnectionCheck;
+        bool bHardwareInfoUpdated;
+
+        public TouchCommanderMainView(TouchCommanderController c)
+        {
+            this.control = c;
+            this.Location = new Point(10, 10);
+            this.Size = new Size(1550, 905);
+
+            lbHMINodeId = new Label();
+            lbHMINodeId.Location = new Point(10, 13);
+            lbHMINodeId.Font = new Font(lbHMINodeId.Font.Name, lbHMINodeId.Font.Size + 2.0F, lbHMINodeId.Font.Style, lbHMINodeId.Font.Unit);
+            lbHMINodeId.Text = "HMI Node ID: ";
+            this.Controls.Add(lbHMINodeId);
+
+            numHMINodeId = new NumericUpDown();
+            numHMINodeId.Location = new Point(110, 10);
+            numHMINodeId.Value = 4;
+            numHMINodeId.Maximum = 20;
+            numHMINodeId.Minimum = 0;
+            numHMINodeId.Size = new Size(50, 50);
+            numHMINodeId.Font = new Font(numHMINodeId.Font.Name, numHMINodeId.Font.Size + 2.0F, numHMINodeId.Font.Style, numHMINodeId.Font.Unit);
+            numHMINodeId.ValueChanged += new EventHandler(this.numHMINodeId_ValueChanged);
+            this.Controls.Add(numHMINodeId);
+
+            btnConnectToHMI = new Button();
+            btnConnectToHMI.Location = new Point(180, 6);
+            btnConnectToHMI.Size = new Size(300, 30);
+            btnConnectToHMI.Font = new Font(btnConnectToHMI.Font.Name, btnConnectToHMI.Font.Size + 2.0F, btnConnectToHMI.Font.Style, btnConnectToHMI.Font.Unit);
+            btnConnectToHMI.Text = "Connect to HMI";
+            btnConnectToHMI.BackColor = Color.Wheat;
+            btnConnectToHMI.Click += new EventHandler(this.btnConnectToHMI_Click);
+            this.Controls.Add(btnConnectToHMI);
+
+            btnEnableTouchConfig = new Button();
+            btnEnableTouchConfig.Location = new Point(500, 6);
+            btnEnableTouchConfig.Size = new Size(200, 30);
+            btnEnableTouchConfig.Font = new Font(btnEnableTouchConfig.Font.Name, btnEnableTouchConfig.Font.Size + 2.0F, btnEnableTouchConfig.Font.Style, btnEnableTouchConfig.Font.Unit);
+            btnEnableTouchConfig.Text = "Enable Configuration";
+            btnEnableTouchConfig.BackColor = Color.LightBlue;
+            btnEnableTouchConfig.Visible = true;
+            btnEnableTouchConfig.Click += new EventHandler(this.btnEnableTouchConfig_Click);
+            this.Controls.Add(btnEnableTouchConfig);
+
+            tabs = new TabControl();
+            tabs.Location = new Point(10, 50);
+            tabs.Size = new Size(this.Width - 10, this.Height - 50);
+            this.Controls.Add(tabs);
+
+            page_dict = new Dictionary<string, TouchCommanderTabBase>();
+
+            control.setHMINodeId((int)numHMINodeId.Value);
+
+            taskWaitForHMI = new BackgroundWorker();
+            taskWaitForHMI.DoWork += taskWaitForHMI_DoWork;
+            taskWaitForHMI.WorkerReportsProgress = true;
+            taskWaitForHMI.ProgressChanged += taskWaitForHMI_ProgressChanged;
+
+            taskHMIConnectionCheck = new BackgroundWorker();
+            taskHMIConnectionCheck.DoWork += taskHMIConnectionCheck_DoWork;
+            taskHMIConnectionCheck.WorkerReportsProgress = true;
+            taskHMIConnectionCheck.WorkerSupportsCancellation = true;
+            taskHMIConnectionCheck.ProgressChanged += taskHMIConnectionCheck_ProgressChanged;
+        }
+
+        public void Clear()
+        {
+            foreach (var tabname in page_dict.Keys)
+            {
+                tabs.Controls.Remove(page_dict[tabname]);
+            }
+            page_dict.Clear();
+        }
+
+        private void ConnectToHMI()
+        {
+            bHardwareInfoUpdated = false;
+            control.RequestHWInfo();
+            if (taskWaitForHMI.IsBusy != true)
+            {
+                taskWaitForHMI.RunWorkerAsync();
+            }
+        }
+
+        private void btnConnectToHMI_Click(Object sender, EventArgs e)
+        {
+            if (btnConnectToHMI.Text == "Connect to HMI")
+            {
+                ConnectToHMI();
+            }
+            else if (btnConnectToHMI.Text == "HMI Connected. Press to Disconnect")
+            {
+                taskHMIConnectionCheck.CancelAsync();
+                btnConnectToHMI.Text = "Connect to HMI";
+                //btnConnectToHMI.BackColor = default(Color);
+                btnConnectToHMI.BackColor = Color.Wheat;
+                control.ClearData();
+                btnEnableTouchConfig.Enabled = false;
+            }
+            else if (btnConnectToHMI.Text == "HMI Disconnected. Press to Reconnect")
+            {
+                taskHMIConnectionCheck.CancelAsync();
+                control.ClearData();
+                ConnectToHMI();
+                btnEnableTouchConfig.Enabled = true;
+            }
+        }
+
+        public void btnEnableTouchConfig_Click(Object sender, EventArgs e)
+        {
+            if (control.ToggleOfflineMode() == true)
+            {
+                btnConnectToHMI.Enabled = false;
+            }
+            else
+            {
+                btnConnectToHMI.Enabled = true;
+            }
+        }
+
+        private void taskWaitForHMI_DoWork(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker worker = (BackgroundWorker)sender;
+            int count = 0;
+            int max_tries = 5;
+            while (count < max_tries)
+            {
+                count++;
+                worker.ReportProgress(count, "Connecting");
+                if (bHardwareInfoUpdated == true)
+                {
+                    worker.ReportProgress(100, "HMI Connected. Press to Disconnect");
+                    return;
+                }
+                Thread.Sleep(1000);
+            }
+            worker.ReportProgress(0, "Connect to HMI");
+            MessageBox.Show("ERROR !!! \nFailed to connect to HMI.\nPlease ensure HMI is connected and powered ON", "ERROR !!!");
+        }
+
+        private void taskWaitForHMI_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            if (e.ProgressPercentage == 0)
+            {
+                btnConnectToHMI.Text = string.Format("{0}", (string)e.UserState);
+                btnConnectToHMI.BackColor = Color.Wheat;
+            }
+            else if (e.ProgressPercentage < 100)
+            {
+                btnConnectToHMI.Text = string.Format("{0}...{1}", (string)e.UserState, e.ProgressPercentage);
+                btnConnectToHMI.BackColor = Color.Khaki;
+            }
+            else
+            {
+                btnConnectToHMI.Text = string.Format("{0}", (string)e.UserState);
+                btnConnectToHMI.BackColor = Color.LightGreen;
+                btnConnectToHMI.Size = new Size(300, 30);
+
+                if (taskHMIConnectionCheck.IsBusy != true)
+                {
+                    taskHMIConnectionCheck.RunWorkerAsync(this.control);
+                }
+            }
+        }
+
+        private void taskHMIConnectionCheck_DoWork(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker worker = (BackgroundWorker)sender;
+
+            TouchCommanderController control = e.Argument as TouchCommanderController;
+
+            HardwareInfoModel model = (HardwareInfoModel)control.GetModel("HW Info");
+            int prev_hbcounter = 0;
+            int hbcounter = 0;
+            int count = 0;
+            int wait_delay = 6 * control.GetNumberOfSlaves(); // 6 * number of slaves seconds
+
+            while (worker.CancellationPending == false)
+            {
+                hbcounter = model.GetHostHBCounter();
+                if (prev_hbcounter != hbcounter)
+                {
+                    prev_hbcounter = hbcounter;
+                    count = 0;
+                }
+                else
+                {
+                    count++;
+                }
+
+                if (count == wait_delay)
+                {
+                    worker.ReportProgress(100, "Target HMI disconnected");
+                }
+                Thread.Sleep(1000);
+            }
+        }
+
+        private void taskHMIConnectionCheck_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            if (e.ProgressPercentage == 100)
+            {
+                taskHMIConnectionCheck.CancelAsync();
+                btnConnectToHMI.Text = "HMI Disconnected. Press to Reconnect";
+                btnConnectToHMI.BackColor = Color.Orange;
+
+                MessageBox.Show("ERROR !!! \nFailed to communicate with the HMI.\nTarget HMI disconnected", "ERROR !!!");
+
+                foreach (var tabname in page_dict.Keys)
+                {
+                    TouchCommanderTabBase tab = page_dict[tabname];
+                    tab.Enabled = false;
+                }
+            }
+        }
+
+        private void numHMINodeId_ValueChanged(Object sender, EventArgs e)
+        {
+            control.setHMINodeId((int)numHMINodeId.Value);
+        }
+
+        public void updateView(string name, Object data)
+        {
+            if (data == null)
+                return;
+
+            if (page_dict.ContainsKey(name) == false)
+            {
+                createtTabView(name);
+            }
+
+            if (page_dict.ContainsKey(name) == true)
+            {
+                page_dict[name].updateView(data);
+                bHardwareInfoUpdated = true;
+            }
+            else
+            {
+                //MessageBox.Show(string.Format("TabView named [{0}] not found in the view list", name), "Error !!!");
+            }
+        }
+
+        public void updateView(string name, string section, Object data)
+        {
+            if (data == null)
+                return;
+
+            if (page_dict.ContainsKey(name) == false)
+            {
+                createtTabView(name);
+            }
+
+            if (page_dict.ContainsKey(name) == true)
+            {
+                page_dict[name].updateView(section, data);
+            }
+            else
+            {
+                //MessageBox.Show(string.Format("TabView named [{0}] not found in the view list", name), "Error !!!");
+            }
+        }
+
+        public TouchCommanderTabBase getView(string name)
+        {
+            return page_dict[name];
+        }
+
+        private TouchCommanderTabBase createtTabView(string name)
+        {
+            TouchCommanderTabBase tabview = null;
+
+            if (name == "HW Info")
+            {
+                tabview = new HWInfoTabPage(control);
+            }
+            else if (name == "Status Report")
+            {
+                tabview = new StatusReportTabPage(control);
+            }
+
+            if (tabview != null)
+            {
+                page_dict.Add(name, tabview);
+                tabs.Controls.Add(page_dict[name]);
+            }
+
+            if (name == "Status Report")
+            {
+                TouchCommanderTabBase view = new DataMonitoringTabPage(this.control);
+                if (view != null)
+                {
+                    page_dict.Add("Data Monitoring", view);
+                    tabs.Controls.Add(page_dict["Data Monitoring"]);
+                }
+
+                byte major;
+                byte minor;
+                byte validation;
+
+                control.GetAPI17GDMVersion(out major, out minor, out validation);
+
+                if (major >= 14)
+                {
+                    view = new FastDataMonitoringTabPage(this.control);
+                    if (view != null)
+                    {
+                        page_dict.Add("Fast Data Monitoring", view);
+                        tabs.Controls.Add(page_dict["Fast Data Monitoring"]);
+                    }
+                }
+
+                view = new CpMonitoringTabPage(this.control);
+                if (view != null)
+                {
+                    page_dict.Add("CP Monitoring", view);
+                    tabs.Controls.Add(page_dict["CP Monitoring"]);
+                }
+            }
+
+            if (name == "Touch Config")
+            {
+                TouchCommanderTabBase view = new TouchConfigTabPage(this.control);
+                if (view != null)
+                {
+                    page_dict.Add("Touch Config", view);
+                    tabs.Controls.Add(page_dict["Touch Config"]);
+                }
+            }
+
+            return tabview;
+        }
+    }
+
+    public abstract class TouchCommanderTabBase : TabPage
+    {
+        protected TouchCommanderController control;
+        public TouchCommanderTabBase(TouchCommanderController c)
+        {
+            this.Font = new Font(this.Font.Name, this.Font.Size + 2.0F, this.Font.Style, this.Font.Unit);
+            control = c;
+        }
+
+        public abstract void updateView(Object data);
+
+        public abstract void updateView(string section, Object data);
+    }
+}

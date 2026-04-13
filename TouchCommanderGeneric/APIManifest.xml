@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<APIManifest>
+  <!-- Insert the Custom Interfaces that will be in this dll, can be more than one
+      <CustomInterface 
+      name="name of the API that will be shown on Open DropDown"
+      classname="Name of the form that will be open"
+      dllname="Name of the DLL that this project will create"/>
+  -->
+  <CustomInterface name="Touch Commander Generic" classname="TouchCommanderGenericForm" dllname="TouchCommanderGeneric.dll"/>
+</APIManifest>

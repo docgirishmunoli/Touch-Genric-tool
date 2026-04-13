@@ -1,0 +1,206 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>WideInterface</name>
+    </assembly>
+    <members>
+        <member name="T:FormSaver">
+            <summary>
+            Class that handles saving and loading into a Form the values of TextBoxes, ComboBoxes and CheckBoxes.
+            </summary>
+        </member>
+        <member name="M:FormSaver.#ctor">
+            <summary>
+            Instantiate a new FormSaver
+            </summary>
+        </member>
+        <member name="M:FormSaver.SaveControls(System.Windows.Forms.Form,System.String,System.Boolean)">
+            <summary>
+            Save on given path all TextBox and ComboBox Text and CheckBox Check State
+            </summary>
+            <param name="form">Container of all TextBox, ComboBox and CheckBox</param>
+            <param name="path">File Path to save the controls</param>
+            <param name="save_readonly">Set true to save from read only TextBox</param>
+            <returns></returns>
+        </member>
+        <member name="M:FormSaver.LoadControls(System.Windows.Forms.Form,System.String,System.Boolean)">
+            <summary>
+            Load from given path all TextBox and ComboBox Text and CheckBox Check State
+            </summary>
+            <param name="form">Container of all TextBox, ComboBox and CheckBox</param>
+            <param name="path">File Path to load the controls</param>
+            <param name="load_readonly">Set true to load into read only TextBox</param>
+            <returns></returns>
+        </member>
+        <member name="M:FormSaver.FindControlRecursive(System.Windows.Forms.Control,System.String)">
+            <summary>
+            Finds a Control recursively. Note: finds the first match and exit
+            </summary>
+            <param name="form">The container to search for the control passed. Remember
+            all controls (Panel, GroupBox, Form, etc) are all containers for controls
+            </param>
+            <param name="name">Name of the control to look for</param>
+            <returns></returns>
+            
+        </member>
+        <member name="M:FormSaver.GetAllControls(System.Windows.Forms.Control)">
+            <summary>
+            Make a list of all controls present on the container
+            </summary>
+            <param name="form"></param>
+            <returns></returns>
+        </member>
+        <member name="T:WideInterface">
+            <summary>
+            Represents a Empty form that can be inherith and be used as a plug-in to WideBoxInterface
+            </summary>
+        </member>
+        <member name="P:WideInterface.WideLocal">
+            <summary>
+            Use this to send messages and commands to the WideBox
+            </summary>
+        </member>
+        <member name="P:WideInterface.AutoSave">
+            <summary>
+            Set true to Auto Save all controls in WideInterface when form Closes and Load when form Loads
+            Default value is true
+            </summary>
+        </member>
+        <member name="P:WideInterface.ReadOnlyAutoSave">
+            <summary>
+            Set true to Auto Save the TextBoxes with readonly parameter true
+            Default value is false
+            </summary>
+        </member>
+        <member name="T:WideInterface.WideInterfaceManifest">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:WideInterface.WideInterfaceManifest.name">
+            <summary>
+            The name
+            </summary>
+        </member>
+        <member name="F:WideInterface.WideInterfaceManifest.classname">
+            <summary>
+            The classname
+            </summary>
+        </member>
+        <member name="F:WideInterface.WideInterfaceManifest.dllname">
+            <summary>
+            The dllname
+            </summary>
+        </member>
+        <member name="F:WideInterface.APIManifest">
+            <summary>
+            The API manifest.
+            Used by the WideBoxInterface to find Child interfaces among the WideInterfaceLib list.
+            </summary>
+        </member>
+        <member name="F:WideInterface._exceptions">
+            <summary>
+            internal var to stack exceptions
+            </summary>
+        </member>
+        <member name="P:WideInterface.Exceptions">
+            <summary>
+            Expection stack for this WideInterface
+            Use <see cref="M:WideInterface.LogException(System.Exception,System.Boolean)"/> to add a new exception
+            WideBoxInterface will pop from this stack and show into main screen
+            </summary>
+        </member>
+        <member name="M:WideInterface.LogException(System.String)">
+            <summary>
+            Add a new Exception to the exception stack
+            </summary>
+            <param name="exception">Exception message</param>
+        </member>
+        <member name="M:WideInterface.LogException(System.Exception,System.Boolean)">
+            <summary>
+            Add a new Exception to the exception stack
+            Includes the Stack Trace from the exception if addTrace is true
+            </summary>
+            <param name="exception">Exception to be push into stack</param>
+            <param name="addTrace">Includes the Stack Trace from the exception</param>
+        </member>
+        <member name="M:WideInterface.#ctor(WideBoxLib.WideBox)">
+            <summary>
+            Initializes a new instance of the <see cref="T:WideInterface"/> class to be called from the WideBoxInterface.
+            </summary>
+            <param name="wb">A valid widebox.</param>
+        </member>
+        <member name="M:WideInterface.#ctor">
+            <summary>
+            Default contructor
+            </summary>
+        </member>
+        <member name="M:WideInterface.parseWideMessage(System.Byte[])">
+            <summary>
+            Virtual method that must be overrided on the child forms to parse the bus messages.
+            </summary>
+            <param name="data">data from the WideBoxInterface</param>
+        </member>
+        <member name="M:WideInterface.parseSimpleWhirlpoolMessage(WideBoxLib.ExtendedSimpleWhirlpoolPacket)">
+            <summary>
+            Virtual method that must be overrided on the child forms to parse the bus messages.
+            </summary>
+            <param name="data">data from the WideBoxInterface</param>
+        </member>
+        <member name="M:WideInterface.parseDeviceMessage(System.String,System.Byte[])">
+            <summary>
+            Virtual method that must be overrided on the child forms to parse device messages
+            </summary>
+            <param name="message">string containing a message from the device</param>
+            <param name="data">data from the device message</param>
+        </member>
+        <member name="M:WideInterface.parseDeviceMessage(WideBoxLib.DeviceMessage)">
+            <summary>
+            Virtual method that must be overrided on the child forms to parse device messages
+            </summary>
+            <param name="message">Device Message that contains data, time stamp and device message string</param>
+        </member>
+        <member name="M:WideInterface.SaveControls(System.Object,System.EventArgs)">
+            <summary>
+            Event called when the WideInterface is closed to save the controls values
+            </summary>
+            <param name="sender">object that called</param>
+            <param name="e">event from the caller</param>
+        </member>
+        <member name="M:WideInterface.SaveControls">
+            <summary>
+            Use this to save the current controls values
+            </summary>
+            <returns>true if the controls was saved successful</returns>
+        </member>
+        <member name="M:WideInterface.LoadControls(System.Object,System.EventArgs)">
+            <summary>
+            Event called when the WideInterface is loaded to load saved controls values
+            </summary>
+            <param name="sender">object that called</param>
+            <param name="e">event from the caller</param>
+        </member>
+        <member name="M:WideInterface.LoadControls">
+            <summary>
+            Use this to reload the already saved controls
+            </summary>
+            <returns>true if the controls was loaded successful</returns>
+        </member>
+        <member name="T:WideInterfaceForm.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:WideInterfaceForm.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:WideInterfaceForm.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+    </members>
+</doc>

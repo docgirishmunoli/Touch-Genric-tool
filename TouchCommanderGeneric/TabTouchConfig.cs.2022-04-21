@@ -1,0 +1,1437 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Windows.Forms;
+using WideBoxLib;
+
+namespace TouchCommanderGenericNamespace
+{
+
+    public class ConfigDataModel
+    {
+        public byte[] dev_cfg;
+        public byte[] cap_cfg;
+        private string chip_type;
+        private int dev_cfg_size;
+        private int cap_cfg_size;
+        private string capsense_type;
+
+        public ConfigDataModel(string chip_type, string capsense_type)
+        {
+            this.chip_type = chip_type;
+            this.capsense_type = capsense_type;
+
+            if (chip_type == "RX130")
+            {
+                dev_cfg_size = 256;
+                dev_cfg = new byte[256];
+                cap_cfg_size = 512;
+                cap_cfg = new byte[512];
+            }
+            else if (chip_type == "PSoC4000S" || chip_type == "PSoC4100S")
+            {
+            }
+            else
+            {
+            }
+        }
+
+        public void updateFullModel(UInt16 offset_addr, byte[] data, int length)
+        {
+            System.Buffer.BlockCopy(data, 0, dev_cfg, 0, dev_cfg_size);
+            System.Buffer.BlockCopy(data, 256, cap_cfg, 0, cap_cfg_size);
+        }
+
+        public void updateDevModel(UInt16 offset_addr, byte[] data, int length)
+        {
+        }
+
+        public void updateCapModel(UInt16 offset_addr, byte[] data, int length)
+        {
+        }
+    }
+
+    public class TouchConfigModel : TouchCommanderModelBase
+    {
+        private bool bModelCreated;
+        private Dictionary<int, ConfigDataModel> cfgModelDict;
+
+        public TouchConfigModel(TouchCommanderController c) : base(c)
+        {
+            cfgModelDict = new Dictionary<int, ConfigDataModel>();
+        }
+
+        public override void updateModel(Object d)
+        {
+        }
+
+        public override void updateModel(Object d, string section)
+        {
+            byte[] data = (byte[])d;
+            int slave_id = data[0];
+            UInt16 offset_addr = (UInt16)((data[1] << 8) | data[2]);
+            UInt16 data_length = (UInt16)((data[3] << 8) | data[4]);
+
+            if (section == "full")
+            {
+                Console.WriteLine("Updating full config for [{0}] slave starting from offset addr [{1}]\n", slave_id, offset_addr);
+                byte[] cfg_data = new byte[data_length];
+                System.Buffer.BlockCopy(data, 5, cfg_data, 0, data_length);
+                cfgModelDict[slave_id].updateFullModel(offset_addr, cfg_data, data_length);
+            }
+        }
+
+        public void createConfigModel(byte slaveid, string chip_type, string capsense_type)
+        {
+            if (cfgModelDict.ContainsKey(slaveid) == false)
+            {
+                ConfigDataModel cfgmodel;
+                cfgmodel = new ConfigDataModel(chip_type, capsense_type);
+                cfgModelDict.Add(slaveid, cfgmodel);
+            }
+        }
+
+        public void clearConfigModel()
+        {
+            cfgModelDict.Clear();
+        }
+
+        public byte[] getDevConfigData(int slaveid)
+        {
+            return cfgModelDict[slaveid].dev_cfg;
+        }
+        public byte[] getCapConfigData(int slaveid)
+        {
+            return cfgModelDict[slaveid].cap_cfg;
+        }
+    }
+
+
+    public class ButtonConfigGroup : GroupBox
+    {
+        Label lbSensor;
+        Label lbHysteresis;
+        Label lbFingerThreshold;
+        Label lbSnsOffsetAdj;
+        Label lbMeasurementCount;
+        Label lbClockSetting;
+        Label lbFreqDiv;
+        Label lbFilterThreshold;
+
+        public Label[] lbSensorID;
+        public NumericUpDown[] numHysteresis;
+        public NumericUpDown[] numFingerThreshold;
+        public NumericUpDown[] numSnsOffsetAdj;
+        public NumericUpDown[] numMeasurementCount;
+        public NumericUpDown[] numClockSetting;
+        public NumericUpDown[] numFreqDiv;
+        public NumericUpDown[] numFilterThreshold;
+
+        int slave_id;
+        //TableLayoutPanel tblPanel;
+
+        public ButtonConfigGroup(int slave_id)
+        {
+            this.slave_id = slave_id;
+            this.Text = String.Format("Slave {0} button config", slave_id);
+
+            lbSensor = new Label();
+            lbSensor.Location = new Point(20, 25);
+            lbSensor.Size = new Size(100, 20);
+            lbSensor.Text = "Sensor ID";
+            lbSensor.Font = new Font(lbSensor.Font.Name, lbSensor.Font.Size + 2.0F, FontStyle.Bold, lbSensor.Font.Unit);
+            this.Controls.Add(lbSensor);
+
+            lbHysteresis = new Label();
+            lbHysteresis.Location = new Point(lbSensor.Location.X + lbSensor.Size.Width + 10, 25);
+            lbHysteresis.Size = new Size(100, 20);
+            lbHysteresis.Text = "Hysteresis";
+            lbHysteresis.Font = new Font(lbHysteresis.Font.Name, lbHysteresis.Font.Size + 2.0F, FontStyle.Bold, lbHysteresis.Font.Unit);
+            this.Controls.Add(lbHysteresis);
+
+            lbFingerThreshold = new Label();
+            lbFingerThreshold.Location = new Point(lbHysteresis.Location.X + lbHysteresis.Size.Width + 10, 25);
+            lbFingerThreshold.Size = new Size(100, 20);
+            lbFingerThreshold.Text = "Finger Thr";
+            lbFingerThreshold.Font = new Font(lbFingerThreshold.Font.Name, lbFingerThreshold.Font.Size + 2.0F, FontStyle.Bold, lbFingerThreshold.Font.Unit);
+            this.Controls.Add(lbFingerThreshold);
+
+            lbSnsOffsetAdj = new Label();
+            lbSnsOffsetAdj.Location = new Point(lbFingerThreshold.Location.X + lbFingerThreshold.Size.Width + 10, 25);
+            lbSnsOffsetAdj.Size = new Size(120, 20);
+            lbSnsOffsetAdj.Text = "SNS Offset Adj";
+            lbSnsOffsetAdj.Font = new Font(lbSnsOffsetAdj.Font.Name, lbSnsOffsetAdj.Font.Size + 2.0F, FontStyle.Bold, lbSnsOffsetAdj.Font.Unit);
+            this.Controls.Add(lbSnsOffsetAdj);
+
+            lbMeasurementCount = new Label();
+            lbMeasurementCount.Location = new Point(lbSnsOffsetAdj.Location.X + lbSnsOffsetAdj.Size.Width + 10, 25);
+            lbMeasurementCount.Size = new Size(140, 20);
+            lbMeasurementCount.Text = "Measurement Cnt";
+            lbMeasurementCount.Font = new Font(lbMeasurementCount.Font.Name, lbMeasurementCount.Font.Size + 2.0F, FontStyle.Bold, lbMeasurementCount.Font.Unit);
+            this.Controls.Add(lbMeasurementCount);
+
+            lbClockSetting = new Label();
+            lbClockSetting.Location = new Point(lbMeasurementCount.Location.X + lbMeasurementCount.Size.Width + 10, 25);
+            lbClockSetting.Size = new Size(100, 20);
+            lbClockSetting.Text = "Clk Setting";
+            lbClockSetting.Font = new Font(lbClockSetting.Font.Name, lbClockSetting.Font.Size + 2.0F, FontStyle.Bold, lbClockSetting.Font.Unit);
+            this.Controls.Add(lbClockSetting);
+
+            lbFreqDiv = new Label();
+            lbFreqDiv.Location = new Point(lbClockSetting.Location.X + lbClockSetting.Size.Width + 10, 25);
+            lbFreqDiv.Size = new Size(80, 20);
+            lbFreqDiv.Text = "Freq Div";
+            lbFreqDiv.Font = new Font(lbFreqDiv.Font.Name, lbFreqDiv.Font.Size + 2.0F, FontStyle.Bold, lbFreqDiv.Font.Unit);
+            this.Controls.Add(lbFreqDiv);
+
+            lbFilterThreshold = new Label();
+            lbFilterThreshold.Location = new Point(lbFreqDiv.Location.X + lbFreqDiv.Size.Width + 10, 25);
+            lbFilterThreshold.Size = new Size(80, 20);
+            lbFilterThreshold.Text = "Freq Thr";
+            lbFilterThreshold.Font = new Font(lbFilterThreshold.Font.Name, lbFilterThreshold.Font.Size + 2.0F, FontStyle.Bold, lbFilterThreshold.Font.Unit);
+            this.Controls.Add(lbFilterThreshold);
+
+
+            lbSensorID = new Label[24];
+            numHysteresis = new NumericUpDown[24];
+            numFingerThreshold = new NumericUpDown[24];
+            numSnsOffsetAdj = new NumericUpDown[24];
+            numMeasurementCount = new NumericUpDown[24];
+            numClockSetting = new NumericUpDown[24];
+            numFreqDiv = new NumericUpDown[24];
+            numFilterThreshold = new NumericUpDown[24];
+
+            int y_location = lbSensor.Location.Y + lbSensor.Size.Height;
+            for (int i = 0; i < 24; i++)
+            {
+                lbSensorID[i] = new Label();
+                lbSensorID[i].Location = new Point(lbSensor.Location.X, y_location + 10);
+                lbSensorID[i].Size = new Size(100, 20);
+                lbSensorID[i].Text = String.Format("Sensor {0}", i);
+                lbSensorID[i].Font = new Font(lbSensorID[i].Font.Name, lbSensorID[i].Font.Size + 2.0F, FontStyle.Bold, lbSensorID[i].Font.Unit);
+                this.Controls.Add(lbSensorID[i]);
+
+                numHysteresis[i] = new NumericUpDown();
+                numHysteresis[i].Location = new Point(lbHysteresis.Location.X, y_location + 10);
+                numHysteresis[i].Size = new Size(80, 20);
+                numHysteresis[i].Value = 100;
+                numHysteresis[i].Maximum = 65535;
+                numHysteresis[i].Font = new Font(numHysteresis[i].Font.Name, numHysteresis[i].Font.Size + 2.0F, FontStyle.Bold, numHysteresis[i].Font.Unit);
+                this.Controls.Add(numHysteresis[i]);
+
+                numFingerThreshold[i] = new NumericUpDown();
+                numFingerThreshold[i].Location = new Point(lbFingerThreshold.Location.X, y_location + 10);
+                numFingerThreshold[i].Size = new Size(80, 20);
+                numFingerThreshold[i].Value = 100;
+                numFingerThreshold[i].Maximum = 65535;
+                numFingerThreshold[i].Font = new Font(numFingerThreshold[i].Font.Name, numFingerThreshold[i].Font.Size + 2.0F, FontStyle.Bold, numFingerThreshold[i].Font.Unit);
+                this.Controls.Add(numFingerThreshold[i]);
+
+                numSnsOffsetAdj[i] = new NumericUpDown();
+                numSnsOffsetAdj[i].Location = new Point(lbSnsOffsetAdj.Location.X, y_location + 10);
+                numSnsOffsetAdj[i].Size = new Size(80, 20);
+                numSnsOffsetAdj[i].Value = 100;
+                numSnsOffsetAdj[i].Maximum = 65535;
+                numSnsOffsetAdj[i].Font = new Font(numSnsOffsetAdj[i].Font.Name, numSnsOffsetAdj[i].Font.Size + 2.0F, FontStyle.Bold, numSnsOffsetAdj[i].Font.Unit);
+                this.Controls.Add(numSnsOffsetAdj[i]);
+
+                numMeasurementCount[i] = new NumericUpDown();
+                numMeasurementCount[i].Location = new Point(lbMeasurementCount.Location.X, y_location + 10);
+                numMeasurementCount[i].Size = new Size(80, 20);
+                numMeasurementCount[i].Value = 100;
+                numMeasurementCount[i].Maximum = 255;
+                numMeasurementCount[i].Font = new Font(numMeasurementCount[i].Font.Name, numMeasurementCount[i].Font.Size + 2.0F, FontStyle.Bold, numMeasurementCount[i].Font.Unit);
+                this.Controls.Add(numMeasurementCount[i]);
+
+                numClockSetting[i] = new NumericUpDown();
+                numClockSetting[i].Location = new Point(lbClockSetting.Location.X, y_location + 10);
+                numClockSetting[i].Size = new Size(80, 20);
+                numClockSetting[i].Value = 100;
+                numClockSetting[i].Maximum = 255;
+                numClockSetting[i].Font = new Font(numClockSetting[i].Font.Name, numClockSetting[i].Font.Size + 2.0F, FontStyle.Bold, numClockSetting[i].Font.Unit);
+                this.Controls.Add(numClockSetting[i]);
+
+                numFreqDiv[i] = new NumericUpDown();
+                numFreqDiv[i].Location = new Point(lbFreqDiv.Location.X, y_location + 10);
+                numFreqDiv[i].Size = new Size(80, 20);
+                numFreqDiv[i].Value = 100;
+                numFreqDiv[i].Maximum = 255;
+                numFreqDiv[i].Font = new Font(numFreqDiv[i].Font.Name, numFreqDiv[i].Font.Size + 2.0F, FontStyle.Bold, numFreqDiv[i].Font.Unit);
+                this.Controls.Add(numFreqDiv[i]);
+
+                numFilterThreshold[i] = new NumericUpDown();
+                numFilterThreshold[i].Location = new Point(lbFilterThreshold.Location.X, y_location + 10);
+                numFilterThreshold[i].Size = new Size(80, 20);
+                numFilterThreshold[i].Value = 100;
+                numFilterThreshold[i].Maximum = 255;
+                numFilterThreshold[i].Font = new Font(numFilterThreshold[i].Font.Name, numFilterThreshold[i].Font.Size + 2.0F, FontStyle.Bold, numFilterThreshold[i].Font.Unit);
+                this.Controls.Add(numFilterThreshold[i]);
+
+                y_location = lbSensorID[i].Location.Y + lbSensorID[i].Size.Height;
+            }
+
+            /*
+            tblPanel = new TableLayoutPanel();
+            tblPanel.Location = new Point(10, 20);
+            tblPanel.Size = new Size(800, 700);
+            tblPanel.ColumnCount = 9;
+            tblPanel.RowCount = 23;
+            tblPanel.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            tblPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+
+            //tblPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
+
+            tblPanel.Controls.Add(new Label() { Text = "SNS Enable", TextAlign = ContentAlignment.MiddleCenter }, 0, 0);
+            tblPanel.Controls.Add(new Label() { Text = "LPM Enable", TextAlign = ContentAlignment.MiddleCenter }, 1, 0);
+            tblPanel.Controls.Add(new Label() { Text = "Hysteresis", TextAlign = ContentAlignment.MiddleCenter }, 2, 0);
+            tblPanel.Controls.Add(new Label() { Text = "Finger Thr", TextAlign = ContentAlignment.MiddleCenter }, 3, 0);
+            tblPanel.Controls.Add(new Label() { Text = "SNS Off Adj", TextAlign = ContentAlignment.MiddleCenter }, 4, 0);
+            tblPanel.Controls.Add(new Label() { Text = "Measure Cnt", TextAlign = ContentAlignment.MiddleCenter }, 5, 0);
+            tblPanel.Controls.Add(new Label() { Text = "Clk Setting", TextAlign = ContentAlignment.MiddleCenter }, 6, 0);
+            tblPanel.Controls.Add(new Label() { Text = "Freq Div", TextAlign = ContentAlignment.MiddleCenter }, 7, 0);
+            tblPanel.Controls.Add(new Label() { Text = "Filter Thr", TextAlign = ContentAlignment.MiddleCenter }, 8, 0);
+            this.Controls.Add(tblPanel);
+
+            for (int i = 1; i < tblPanel.RowCount; i++)
+            {
+
+                tblPanel.Controls.Add(new CheckBox() { Checked = false, CheckAlign = ContentAlignment.MiddleCenter }, 0, i);
+                tblPanel.Controls.Add(new CheckBox() { Checked = false, CheckAlign = ContentAlignment.MiddleCenter }, 1, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 2, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 3, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 4, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 5, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 6, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 7, i);
+                tblPanel.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 8, i);
+
+            }
+            */
+        }
+    }
+
+    public class SensorButton : Button
+    {
+        private int Id;
+        public bool Selected;
+        public SensorButton(int id)
+        {
+            Id = id;
+            Selected = false;
+        }
+
+        public int GetBtnId()
+        {
+            return Id;
+        }
+    }
+
+    public class RX130TouchDevConfigTabPage : TouchCommanderTabBase
+    {
+        private bool bViewInitComplete;
+
+        GroupBox gbGlobalConfig;
+        Label lbHeartBeatRate;
+        NumericUpDown numHeartBeatRate;
+        Label lbClassBEnable;
+        CheckBox ckClassBEnable;
+        Label lbConfigWPart;
+        TextBox txtConfigWPart;
+        Label lbConfigVersion;
+        NumericUpDown numConfigVersionMajor;
+        NumericUpDown numConfigVersionMinor;
+        NumericUpDown numConfigVersionValid;
+        Label lbCapsenseDebug;
+        CheckBox ckCapsenseDebug;
+        Label lbConfigNumber;
+        NumericUpDown numConfigNumber;
+        Label lbTuningEnable;
+        CheckBox ckTuningEnable;
+
+        GroupBox gbHwConfig;
+        Label lbInvalidSensorConnection;
+        ComboBox cbInvalidSensorConnection;
+        private List<string> lstInvalidSensorConnection = new List<string> { "Connect to GND", "Connect to Shield", "Hign - Z" };
+        Label lbHostIntPolarity;
+        ComboBox cbHostIntPolarity;
+        private List<string> lstHostIntPolarity = new List<string> { "Active Low", "Active High" };
+        Label lbHostIntDriveMode;
+        ComboBox cbHostIntDriveMode;
+        private List<string> lstHostIntDriveMode = new List<string> { "Strong Drive", "Open Drain Drive" };
+        Label lbHostIntTimeout;
+        NumericUpDown numHostIntTimeout;
+        Label lbRefreshInterval;
+        NumericUpDown numRefreshInterval;
+        Label lbI2CAddrHWSelection;
+        CheckBox ckI2CAddrHWSelection;
+        Label lbI2CAddrSWSelection;
+        NumericUpDown numI2CAddrSWSelection;
+        Label lbI2CInactivityTimeout;
+        NumericUpDown numI2CInactivityTimeout;
+
+        GroupBox gbFilterConfig;
+        Label lbMovingAvgFilter;
+        CheckBox ckMovingAvgFilter;
+        Label lbPerSwitchThreshold;
+        CheckBox ckPerSwitchThreshold;
+        Label lbMovingAvgNumber;
+        NumericUpDown numMovingAvgNumber;
+        Label lbJudgeMultiFreq;
+        CheckBox ckJudgeMultiFreq;
+        Label lbFilterCommonThresh;
+        NumericUpDown numFilterCommonThresh;
+        Label lbFilterPointsToTrigger;
+        NumericUpDown numFilterPointsToTrigger;
+        Label lbFilterTimeoutSamples;
+        NumericUpDown numFilterTimeoutSamples;
+
+        GroupBox gbCTSUConfig;
+        Label lbCTSUNonMeasuredChannel;
+        NumericUpDown numCTSUNonMeasuredChannel;
+        Label lbCTSUTransPSUSelect;
+        NumericUpDown numCTSUTransPSUSelect;
+        Label lbCTSUPSUCapacityAdj;
+        NumericUpDown numCTSUPSUCapacityAdj;
+        Label lbNumTxChannels;
+        NumericUpDown numNumTxChannels;
+        Label lbNumRxChannels;
+        NumericUpDown numNumRxChannels;
+        Label lbSelfTargetValueOffset;
+        NumericUpDown numSelfTargetValueOffset;
+        Label lbMutualTargetValueOffset;
+        NumericUpDown numMutualTargetValueOffset;
+        Label lbSensorAutoResetTimeout;
+        NumericUpDown numSensorAutoResetTimeout;
+
+        GroupBox gbBtnEnable;
+        SensorButton[] btnEnable; 
+        GroupBox gbLowPowerBtnEnable;
+        SensorButton[] btnLPEnable;
+
+        GroupBox gbOtherConfig;
+        Label lbOnFreq;
+        NumericUpDown numOnFreq;
+        Label lbDriftFreq;
+        NumericUpDown numDriftFreq;
+        Label lbCancelDriftFreq;
+        NumericUpDown numCancelDriftFreq;
+
+        int slave_id;
+
+        public RX130TouchDevConfigTabPage(TouchCommanderController c, int slave_id) : base(c)
+        {
+            this.slave_id = slave_id;
+            this.Text = String.Format("Slave {0}: RX130 Global Configuration", slave_id);
+
+            bViewInitComplete = false;
+
+            initView();
+        }
+
+        private void initView()
+        {
+            gbGlobalConfig = new GroupBox();
+            gbGlobalConfig.Location = new Point(15, 10);
+            gbGlobalConfig.Size = new Size(300, 350);
+            gbGlobalConfig.Text = "Global Config";
+            gbGlobalConfig.Font = new Font(gbGlobalConfig.Font.Name, gbGlobalConfig.Font.Size + 2.0F, gbGlobalConfig.Font.Style, gbGlobalConfig.Font.Unit);
+            this.Controls.Add(gbGlobalConfig);
+
+            lbHeartBeatRate = new Label();
+            lbHeartBeatRate.Location = new Point(10, 25);
+            lbHeartBeatRate.Size = new Size(120, 30);
+            lbHeartBeatRate.Text = "Heartbeat Rate: ";
+            lbHeartBeatRate.Font = new Font(lbHeartBeatRate.Font.Name, lbHeartBeatRate.Font.Size + 2.0F, FontStyle.Bold, lbHeartBeatRate.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbHeartBeatRate);
+
+            numHeartBeatRate = new NumericUpDown();
+            numHeartBeatRate.Location = new Point(lbHeartBeatRate.Location.X + lbHeartBeatRate.Size.Width + 20, 20);
+            numHeartBeatRate.Size = new Size(120, 30);
+            numHeartBeatRate.Value = 100;
+            numHeartBeatRate.Font = new Font(numHeartBeatRate.Font.Name, numHeartBeatRate.Font.Size + 2.0F, FontStyle.Bold, numHeartBeatRate.Font.Unit);
+            gbGlobalConfig.Controls.Add(numHeartBeatRate);
+
+            lbClassBEnable = new Label();
+            lbClassBEnable.Location = new Point(lbHeartBeatRate.Location.X, lbHeartBeatRate.Location.Y + lbHeartBeatRate.Size.Height + 10);
+            lbClassBEnable.Size = new Size(150, 30);
+            lbClassBEnable.Text = "Enable Class B: ";
+            lbClassBEnable.Font = new Font(lbClassBEnable.Font.Name, lbClassBEnable.Font.Size + 2.0F, FontStyle.Bold, lbClassBEnable.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbClassBEnable);
+
+            ckClassBEnable = new CheckBox();
+            //ckClassBEnable.Location = new Point(lbClassBEnable.Size.Width + 30, lbHeartBeatRate.Location.Y + lbHeartBeatRate.Size.Height + 5);
+            ckClassBEnable.Location = new Point(lbClassBEnable.Location.X + lbClassBEnable.Size.Width + 30, lbClassBEnable.Location.Y - 5);
+            ckClassBEnable.Size = new Size(30, 30);
+            ckClassBEnable.Checked = true;
+            gbGlobalConfig.Controls.Add(ckClassBEnable);
+
+            lbRefreshInterval = new Label();
+            lbRefreshInterval.Location = new Point(lbClassBEnable.Location.X, lbClassBEnable.Location.Y + lbClassBEnable.Size.Height + 10);
+            lbRefreshInterval.Size = new Size(150, 30);
+            lbRefreshInterval.Text = "Refresh Interval Rate: ";
+            lbRefreshInterval.Font = new Font(lbRefreshInterval.Font.Name, lbRefreshInterval.Font.Size + 2.0F, FontStyle.Bold, lbRefreshInterval.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbRefreshInterval);
+
+            numRefreshInterval = new NumericUpDown();
+            numRefreshInterval.Location = new Point(lbRefreshInterval.Location.X + lbRefreshInterval.Size.Width + 20, lbRefreshInterval.Location.Y - 5);
+            numRefreshInterval.Size = new Size(80, 30);
+            numRefreshInterval.Value = 20;
+            numRefreshInterval.Font = new Font(numRefreshInterval.Font.Name, numRefreshInterval.Font.Size + 2.0F, FontStyle.Bold, numRefreshInterval.Font.Unit);
+            gbGlobalConfig.Controls.Add(numRefreshInterval);
+
+            lbConfigWPart = new Label();
+            lbConfigWPart.Location = new Point(lbRefreshInterval.Location.X, lbRefreshInterval.Location.Y + lbRefreshInterval.Size.Height + 10);
+            lbConfigWPart.Size = new Size(150, 30);
+            lbConfigWPart.Text = "Touch Config WPart: ";
+            lbConfigWPart.Font = new Font(lbConfigWPart.Font.Name, lbConfigWPart.Font.Size + 2.0F, FontStyle.Bold, lbConfigWPart.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbConfigWPart);
+
+            txtConfigWPart = new TextBox();
+            txtConfigWPart.Location = new Point(lbConfigWPart.Location.X + lbConfigWPart.Size.Width + 20, lbConfigWPart.Location.Y - 5);
+            txtConfigWPart.Size = new Size(100, 30);
+            txtConfigWPart.Text = "";
+            txtConfigWPart.MaxLength = 9;
+            txtConfigWPart.Font = new Font(txtConfigWPart.Font.Name, txtConfigWPart.Font.Size + 2.0F, FontStyle.Bold, txtConfigWPart.Font.Unit);
+            gbGlobalConfig.Controls.Add(txtConfigWPart);
+
+            lbConfigVersion = new Label();
+            lbConfigVersion.Location = new Point(lbConfigWPart.Location.X, lbConfigWPart.Location.Y + lbConfigWPart.Size.Height + 10);
+            lbConfigVersion.Size = new Size(110, 30);
+            lbConfigVersion.Text = "Touch Cfg Ver: ";
+            lbConfigVersion.Font = new Font(lbConfigVersion.Font.Name, lbConfigVersion.Font.Size + 2.0F, FontStyle.Bold, lbConfigVersion.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbConfigVersion);
+
+            numConfigVersionMajor = new NumericUpDown();
+            numConfigVersionMajor.Location = new Point(lbConfigVersion.Location.X + lbConfigVersion.Size.Width + 20, lbConfigVersion.Location.Y - 5);
+            numConfigVersionMajor.Size = new Size(45, 30);
+            numConfigVersionMajor.Value = 0;
+            numConfigVersionMajor.Font = new Font(numConfigVersionMajor.Font.Name, numConfigVersionMajor.Font.Size + 2.0F, FontStyle.Bold, numConfigVersionMajor.Font.Unit);
+            gbGlobalConfig.Controls.Add(numConfigVersionMajor);
+
+            numConfigVersionMinor = new NumericUpDown();
+            numConfigVersionMinor.Location = new Point(numConfigVersionMajor.Location.X + numConfigVersionMajor.Size.Width + 10, numConfigVersionMajor.Location.Y);
+            numConfigVersionMinor.Size = new Size(45, 30);
+            numConfigVersionMinor.Value = 0;
+            numConfigVersionMinor.Font = new Font(numConfigVersionMinor.Font.Name, numConfigVersionMinor.Font.Size + 2.0F, FontStyle.Bold, numConfigVersionMinor.Font.Unit);
+            gbGlobalConfig.Controls.Add(numConfigVersionMinor);
+
+            numConfigVersionValid = new NumericUpDown();
+            numConfigVersionValid.Location = new Point(numConfigVersionMinor.Location.X + numConfigVersionMinor.Size.Width + 10, numConfigVersionMinor.Location.Y);
+            numConfigVersionValid.Size = new Size(45, 30);
+            numConfigVersionValid.Value = 0;
+            numConfigVersionValid.Font = new Font(numConfigVersionValid.Font.Name, numConfigVersionValid.Font.Size + 2.0F, FontStyle.Bold, numConfigVersionValid.Font.Unit);
+            gbGlobalConfig.Controls.Add(numConfigVersionValid);
+
+            lbCapsenseDebug = new Label();
+            lbCapsenseDebug.Location = new Point(lbConfigVersion.Location.X, lbConfigVersion.Location.Y + lbConfigVersion.Size.Height + 10);
+            lbCapsenseDebug.Size = new Size(150, 30);
+            lbCapsenseDebug.Text = "Capsense Debug: ";
+            lbCapsenseDebug.Font = new Font(lbCapsenseDebug.Font.Name, lbCapsenseDebug.Font.Size + 2.0F, FontStyle.Bold, lbCapsenseDebug.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbCapsenseDebug);
+
+            ckCapsenseDebug = new CheckBox();
+            ckCapsenseDebug.Location = new Point(lbCapsenseDebug.Location.X + lbCapsenseDebug.Size.Width + 30, lbCapsenseDebug.Location.Y - 5);
+            ckCapsenseDebug.Size = new Size(30, 30);
+            ckCapsenseDebug.Checked = false;
+            gbGlobalConfig.Controls.Add(ckCapsenseDebug);
+
+            lbConfigNumber = new Label();
+            lbConfigNumber.Location = new Point(lbCapsenseDebug.Location.X, lbCapsenseDebug.Location.Y + lbCapsenseDebug.Size.Height + 10);
+            lbConfigNumber.Size = new Size(150, 30);
+            lbConfigNumber.Text = "Config Number: ";
+            lbConfigNumber.Font = new Font(lbConfigNumber.Font.Name, lbConfigNumber.Font.Size + 2.0F, FontStyle.Bold, lbConfigNumber.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbConfigNumber);
+            
+            numConfigNumber = new NumericUpDown();
+            numConfigNumber.Location = new Point(lbConfigNumber.Location.X + lbConfigNumber.Size.Width + 10, lbConfigNumber.Location.Y);
+            numConfigNumber.Size = new Size(45, 30);
+            numConfigNumber.Value = 1;
+            numConfigNumber.Font = new Font(numConfigNumber.Font.Name, numConfigNumber.Font.Size + 2.0F, FontStyle.Bold, numConfigNumber.Font.Unit);
+            gbGlobalConfig.Controls.Add(numConfigNumber);
+
+            lbTuningEnable = new Label();
+            lbTuningEnable.Location = new Point(lbConfigNumber.Location.X, lbConfigNumber.Location.Y + lbConfigNumber.Size.Height + 10);
+            lbTuningEnable.Size = new Size(150, 30);
+            lbTuningEnable.Text = "Tuning Enable: ";
+            lbTuningEnable.Font = new Font(lbTuningEnable.Font.Name, lbTuningEnable.Font.Size + 2.0F, FontStyle.Bold, lbTuningEnable.Font.Unit);
+            gbGlobalConfig.Controls.Add(lbTuningEnable);
+
+            ckTuningEnable = new CheckBox();
+            ckTuningEnable.Location = new Point(lbTuningEnable.Location.X + lbTuningEnable.Size.Width + 30, lbTuningEnable.Location.Y - 5);
+            ckTuningEnable.Size = new Size(30, 30);
+            ckTuningEnable.Checked = true;
+            ckTuningEnable.Enabled = false;
+            gbGlobalConfig.Controls.Add(ckTuningEnable);
+
+            gbFilterConfig = new GroupBox();
+            //gbFilterConfig.Location = new Point(gbGlobalConfig.Location.X, gbGlobalConfig.Location.Y + gbGlobalConfig.Size.Height + 15);
+            gbFilterConfig.Location = new Point(gbGlobalConfig.Location.X + gbGlobalConfig.Size.Width + 10, gbGlobalConfig.Location.Y);
+            gbFilterConfig.Size = new Size(300, 300);
+            gbFilterConfig.Text = "Filter Config";
+            gbFilterConfig.Font = new Font(gbFilterConfig.Font.Name, gbFilterConfig.Font.Size + 2.0F, gbFilterConfig.Font.Style, gbFilterConfig.Font.Unit);
+            this.Controls.Add(gbFilterConfig);
+            
+            lbMovingAvgFilter = new Label();
+            lbMovingAvgFilter.Location = new Point(10, 25);
+            lbMovingAvgFilter.Size = new Size(200, 30);
+            lbMovingAvgFilter.Text = "Enable Moving Avg Filter: ";
+            lbMovingAvgFilter.Font = new Font(lbMovingAvgFilter.Font.Name, lbMovingAvgFilter.Font.Size + 2.0F, FontStyle.Bold, lbMovingAvgFilter.Font.Unit);
+            gbFilterConfig.Controls.Add(lbMovingAvgFilter);
+
+            ckMovingAvgFilter = new CheckBox();
+            ckMovingAvgFilter.Location = new Point(lbMovingAvgFilter.Size.Width + 30, 20);
+            ckMovingAvgFilter.Size = new Size(30, 30);
+            ckMovingAvgFilter.Checked = true;
+            gbFilterConfig.Controls.Add(ckMovingAvgFilter);
+            
+            lbPerSwitchThreshold = new Label();
+            lbPerSwitchThreshold.Location = new Point(10, lbMovingAvgFilter.Location.X + lbMovingAvgFilter.Size.Height + 20);
+            lbPerSwitchThreshold.Size = new Size(200, 30);
+            lbPerSwitchThreshold.Text = "Enable Per Switch Threshold: ";
+            lbPerSwitchThreshold.Font = new Font(lbPerSwitchThreshold.Font.Name, lbPerSwitchThreshold.Font.Size + 2.0F, FontStyle.Bold, lbPerSwitchThreshold.Font.Unit);
+            gbFilterConfig.Controls.Add(lbPerSwitchThreshold);
+
+            ckPerSwitchThreshold = new CheckBox();
+            ckPerSwitchThreshold.Location = new Point(lbPerSwitchThreshold.Size.Width + 30, lbPerSwitchThreshold.Size.Height + 25);
+            ckPerSwitchThreshold.Size = new Size(30, 30);
+            ckPerSwitchThreshold.Checked = true;
+            gbFilterConfig.Controls.Add(ckPerSwitchThreshold);
+
+            lbMovingAvgNumber = new Label();
+            lbMovingAvgNumber.Location = new Point(lbPerSwitchThreshold.Location.X,  lbPerSwitchThreshold.Location.Y + lbPerSwitchThreshold.Size.Height + 10);
+            lbMovingAvgNumber.Size = new Size(200, 30);
+            lbMovingAvgNumber.Text = "Moving Avg Number: ";
+            lbMovingAvgNumber.Font = new Font(lbMovingAvgNumber.Font.Name, lbMovingAvgNumber.Font.Size + 2.0F, FontStyle.Bold, lbMovingAvgNumber.Font.Unit);
+            gbFilterConfig.Controls.Add(lbMovingAvgNumber);
+
+            numMovingAvgNumber = new NumericUpDown();
+            numMovingAvgNumber.Location = new Point(lbMovingAvgNumber.Location.X + lbMovingAvgNumber.Size.Width + 10, lbMovingAvgNumber.Location.Y);
+            numMovingAvgNumber.Size = new Size(40, 30);
+            numMovingAvgNumber.Value = 4;
+            numMovingAvgNumber.Font = new Font(numMovingAvgNumber.Font.Name, numMovingAvgNumber.Font.Size + 2.0F, FontStyle.Bold, numMovingAvgNumber.Font.Unit);
+            gbFilterConfig.Controls.Add(numMovingAvgNumber);
+
+            lbJudgeMultiFreq = new Label();
+            lbJudgeMultiFreq.Location = new Point(lbMovingAvgNumber.Location.X, lbMovingAvgNumber.Location.Y + lbMovingAvgNumber.Size.Height + 10);
+            lbJudgeMultiFreq.Size = new Size(200, 30);
+            lbJudgeMultiFreq.Text = "Judge Multi Freq: ";
+            lbJudgeMultiFreq.Font = new Font(lbJudgeMultiFreq.Font.Name, lbJudgeMultiFreq.Font.Size + 2.0F, FontStyle.Bold, lbJudgeMultiFreq.Font.Unit);
+            gbFilterConfig.Controls.Add(lbJudgeMultiFreq);
+
+            ckJudgeMultiFreq = new CheckBox();
+            ckJudgeMultiFreq.Location = new Point(lbJudgeMultiFreq.Location.X + lbJudgeMultiFreq.Size.Width + 15, lbJudgeMultiFreq.Location.Y );
+            ckJudgeMultiFreq.Size = new Size(30, 30);
+            ckJudgeMultiFreq.Checked = false;
+            gbFilterConfig.Controls.Add(ckJudgeMultiFreq);
+
+            lbFilterCommonThresh = new Label();
+            lbFilterCommonThresh.Location = new Point(lbJudgeMultiFreq.Location.X, lbJudgeMultiFreq.Location.Y + lbJudgeMultiFreq.Size.Height + 10);
+            lbFilterCommonThresh.Size = new Size(200, 30);
+            lbFilterCommonThresh.Text = "Filter Common Thresh: ";
+            lbFilterCommonThresh.Font = new Font(lbFilterCommonThresh.Font.Name, lbFilterCommonThresh.Font.Size + 2.0F, FontStyle.Bold, lbFilterCommonThresh.Font.Unit);
+            gbFilterConfig.Controls.Add(lbFilterCommonThresh);
+
+            numFilterCommonThresh = new NumericUpDown();
+            numFilterCommonThresh.Location = new Point(lbFilterCommonThresh.Location.X + lbFilterCommonThresh.Size.Width + 10, lbFilterCommonThresh.Location.Y);
+            numFilterCommonThresh.Size = new Size(50, 30);
+            numFilterCommonThresh.Value = 0;
+            numFilterCommonThresh.Font = new Font(numFilterCommonThresh.Font.Name, numFilterCommonThresh.Font.Size + 2.0F, FontStyle.Bold, numFilterCommonThresh.Font.Unit);
+            gbFilterConfig.Controls.Add(numFilterCommonThresh);
+
+            lbFilterPointsToTrigger = new Label();
+            lbFilterPointsToTrigger.Location = new Point(lbFilterCommonThresh.Location.X, lbFilterCommonThresh.Location.Y + lbFilterCommonThresh.Size.Height + 10);
+            lbFilterPointsToTrigger.Size = new Size(200, 30);
+            lbFilterPointsToTrigger.Text = "Filter Points to Trig: ";
+            lbFilterPointsToTrigger.Font = new Font(lbFilterPointsToTrigger.Font.Name, lbFilterPointsToTrigger.Font.Size + 2.0F, FontStyle.Bold, lbFilterPointsToTrigger.Font.Unit);
+            gbFilterConfig.Controls.Add(lbFilterPointsToTrigger);
+
+            numFilterPointsToTrigger = new NumericUpDown();
+            numFilterPointsToTrigger.Location = new Point(lbFilterPointsToTrigger.Location.X + lbFilterPointsToTrigger.Size.Width + 10, lbFilterPointsToTrigger.Location.Y);
+            numFilterPointsToTrigger.Size = new Size(50, 30);
+            numFilterPointsToTrigger.Value = 0;
+            numFilterPointsToTrigger.Font = new Font(numFilterPointsToTrigger.Font.Name, numFilterPointsToTrigger.Font.Size + 2.0F, FontStyle.Bold, numFilterPointsToTrigger.Font.Unit);
+            gbFilterConfig.Controls.Add(numFilterPointsToTrigger);
+
+            lbFilterTimeoutSamples = new Label();
+            lbFilterTimeoutSamples.Location = new Point(lbFilterPointsToTrigger.Location.X, lbFilterPointsToTrigger.Location.Y + lbFilterPointsToTrigger.Size.Height + 10);
+            lbFilterTimeoutSamples.Size = new Size(200, 30);
+            lbFilterTimeoutSamples.Text = "Filter Timeout Samples: ";
+            lbFilterTimeoutSamples.Font = new Font(lbFilterTimeoutSamples.Font.Name, lbFilterTimeoutSamples.Font.Size + 2.0F, FontStyle.Bold, lbFilterTimeoutSamples.Font.Unit);
+            gbFilterConfig.Controls.Add(lbFilterTimeoutSamples);
+
+            numFilterTimeoutSamples = new NumericUpDown();
+            numFilterTimeoutSamples.Location = new Point(lbFilterTimeoutSamples.Location.X + lbFilterTimeoutSamples.Size.Width + 10, lbFilterTimeoutSamples.Location.Y);
+            numFilterTimeoutSamples.Size = new Size(50, 30);
+            numFilterTimeoutSamples.Value = 0;
+            numFilterTimeoutSamples.Font = new Font(numFilterTimeoutSamples.Font.Name, numFilterTimeoutSamples.Font.Size + 2.0F, FontStyle.Bold, numFilterTimeoutSamples.Font.Unit);
+            gbFilterConfig.Controls.Add(numFilterTimeoutSamples);
+
+            gbCTSUConfig = new GroupBox();
+            gbCTSUConfig.Location = new Point(gbFilterConfig.Location.X, gbFilterConfig.Location.Y + gbFilterConfig.Size.Height + 15);
+            gbCTSUConfig.Size = new Size(300, 345);
+            gbCTSUConfig.Text = "CTSU Config";
+            gbCTSUConfig.Font = new Font(gbCTSUConfig.Font.Name, gbCTSUConfig.Font.Size + 2.0F, gbCTSUConfig.Font.Style, gbCTSUConfig.Font.Unit);
+            this.Controls.Add(gbCTSUConfig);
+            
+            lbCTSUNonMeasuredChannel = new Label();
+            lbCTSUNonMeasuredChannel.Location = new Point(10, 25);
+            lbCTSUNonMeasuredChannel.Size = new Size(200, 30);
+            lbCTSUNonMeasuredChannel.Text = "Non Measured Channel: ";
+            lbCTSUNonMeasuredChannel.Font = new Font(lbCTSUNonMeasuredChannel.Font.Name, lbCTSUNonMeasuredChannel.Font.Size + 2.0F, FontStyle.Bold, lbCTSUNonMeasuredChannel.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbCTSUNonMeasuredChannel);
+            
+            numCTSUNonMeasuredChannel = new NumericUpDown();
+            numCTSUNonMeasuredChannel.Location = new Point(lbCTSUNonMeasuredChannel.Location.X + lbCTSUNonMeasuredChannel.Size.Width + 10, lbCTSUNonMeasuredChannel.Location.Y);
+            numCTSUNonMeasuredChannel.Size = new Size(50, 30);
+            numCTSUNonMeasuredChannel.Value = 0;
+            numCTSUNonMeasuredChannel.Enabled = false;
+            numCTSUNonMeasuredChannel.Font = new Font(numCTSUNonMeasuredChannel.Font.Name, numCTSUNonMeasuredChannel.Font.Size + 2.0F, FontStyle.Bold, numCTSUNonMeasuredChannel.Font.Unit);
+            gbCTSUConfig.Controls.Add(numCTSUNonMeasuredChannel);
+            
+            lbCTSUTransPSUSelect = new Label();
+            lbCTSUTransPSUSelect.Location = new Point(lbCTSUNonMeasuredChannel.Location.X, lbCTSUNonMeasuredChannel.Location.Y + lbCTSUNonMeasuredChannel.Size.Height + 10);
+            lbCTSUTransPSUSelect.Size = new Size(200, 30);
+            lbCTSUTransPSUSelect.Text = "Transmission PSU Select: ";
+            lbCTSUTransPSUSelect.Font = new Font(lbCTSUTransPSUSelect.Font.Name, lbCTSUTransPSUSelect.Font.Size + 2.0F, FontStyle.Bold, lbCTSUTransPSUSelect.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbCTSUTransPSUSelect);
+            
+            numCTSUTransPSUSelect = new NumericUpDown();
+            numCTSUTransPSUSelect.Location = new Point(lbCTSUTransPSUSelect.Location.X + lbCTSUTransPSUSelect.Size.Width + 10, lbCTSUTransPSUSelect.Location.Y);
+            numCTSUTransPSUSelect.Size = new Size(50, 30);
+            numCTSUTransPSUSelect.Value = 0;
+            numCTSUTransPSUSelect.Font = new Font(numCTSUTransPSUSelect.Font.Name, numCTSUTransPSUSelect.Font.Size + 2.0F, FontStyle.Bold, numCTSUTransPSUSelect.Font.Unit);
+            gbCTSUConfig.Controls.Add(numCTSUTransPSUSelect);
+            
+            lbCTSUPSUCapacityAdj = new Label();
+            lbCTSUPSUCapacityAdj.Location = new Point(lbCTSUTransPSUSelect.Location.X, lbCTSUTransPSUSelect.Location.Y + lbCTSUTransPSUSelect.Size.Height + 10);
+            lbCTSUPSUCapacityAdj.Size = new Size(200, 30);
+            lbCTSUPSUCapacityAdj.Text = "PSU Capacity Adjust: ";
+            lbCTSUPSUCapacityAdj.Font = new Font(lbCTSUPSUCapacityAdj.Font.Name, lbCTSUPSUCapacityAdj.Font.Size + 2.0F, FontStyle.Bold, lbCTSUPSUCapacityAdj.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbCTSUPSUCapacityAdj);
+            
+            numCTSUPSUCapacityAdj = new NumericUpDown();
+            numCTSUPSUCapacityAdj.Location = new Point(lbCTSUPSUCapacityAdj.Location.X + lbCTSUPSUCapacityAdj.Size.Width + 10, lbCTSUPSUCapacityAdj.Location.Y);
+            numCTSUPSUCapacityAdj.Size = new Size(50, 30);
+            numCTSUPSUCapacityAdj.Value = 0;
+            numCTSUPSUCapacityAdj.Font = new Font(numCTSUPSUCapacityAdj.Font.Name, numCTSUPSUCapacityAdj.Font.Size + 2.0F, FontStyle.Bold, numCTSUPSUCapacityAdj.Font.Unit);
+            gbCTSUConfig.Controls.Add(numCTSUPSUCapacityAdj);
+            
+            lbNumTxChannels = new Label();
+            lbNumTxChannels.Location = new Point(lbCTSUPSUCapacityAdj.Location.X, lbCTSUPSUCapacityAdj.Location.Y + lbCTSUPSUCapacityAdj.Size.Height + 10);
+            lbNumTxChannels.Size = new Size(200, 30);
+            lbNumTxChannels.Text = "Number of TX Lines: ";
+            lbNumTxChannels.Font = new Font(lbNumTxChannels.Font.Name, lbNumTxChannels.Font.Size + 2.0F, FontStyle.Bold, lbNumTxChannels.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbNumTxChannels);
+
+            numNumTxChannels = new NumericUpDown();
+            numNumTxChannels.Location = new Point(lbNumTxChannels.Location.X + lbNumTxChannels.Size.Width + 10, lbNumTxChannels.Location.Y);
+            numNumTxChannels.Size = new Size(50, 30);
+            numNumTxChannels.Value = 0;
+            numNumTxChannels.Font = new Font(numNumTxChannels.Font.Name, numNumTxChannels.Font.Size + 2.0F, FontStyle.Bold, numNumTxChannels.Font.Unit);
+            gbCTSUConfig.Controls.Add(numNumTxChannels);
+
+            lbNumRxChannels = new Label();
+            lbNumRxChannels.Location = new Point(lbNumTxChannels.Location.X, lbNumTxChannels.Location.Y + lbNumTxChannels.Size.Height + 10);
+            lbNumRxChannels.Size = new Size(200, 30);
+            lbNumRxChannels.Text = "Number of RX Lines: ";
+            lbNumRxChannels.Font = new Font(lbNumRxChannels.Font.Name, lbNumRxChannels.Font.Size + 2.0F, FontStyle.Bold, lbNumRxChannels.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbNumRxChannels);
+
+            numNumRxChannels = new NumericUpDown();
+            numNumRxChannels.Location = new Point(lbNumRxChannels.Location.X + lbNumRxChannels.Size.Width + 10, lbNumRxChannels.Location.Y);
+            numNumRxChannels.Size = new Size(50, 30);
+            numNumRxChannels.Value = 0;
+            numNumRxChannels.Font = new Font(numNumRxChannels.Font.Name, numNumRxChannels.Font.Size + 2.0F, FontStyle.Bold, numNumRxChannels.Font.Unit);
+            gbCTSUConfig.Controls.Add(numNumRxChannels);
+
+            lbSelfTargetValueOffset = new Label();
+            lbSelfTargetValueOffset.Location = new Point(lbNumRxChannels.Location.X, lbNumRxChannels.Location.Y + lbNumRxChannels.Size.Height + 10);
+            lbSelfTargetValueOffset.Size = new Size(200, 30);
+            lbSelfTargetValueOffset.Text = "Self Target Value Offset: ";
+            lbSelfTargetValueOffset.Font = new Font(lbSelfTargetValueOffset.Font.Name, lbSelfTargetValueOffset.Font.Size + 2.0F, FontStyle.Bold, lbSelfTargetValueOffset.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbSelfTargetValueOffset);
+
+            numSelfTargetValueOffset = new NumericUpDown();
+            numSelfTargetValueOffset.Location = new Point(lbSelfTargetValueOffset.Location.X + lbSelfTargetValueOffset.Size.Width + 10, lbSelfTargetValueOffset.Location.Y);
+            numSelfTargetValueOffset.Size = new Size(50, 30);
+            numSelfTargetValueOffset.Value = 0;
+            numSelfTargetValueOffset.Font = new Font(numSelfTargetValueOffset.Font.Name, numSelfTargetValueOffset.Font.Size + 2.0F, FontStyle.Bold, numSelfTargetValueOffset.Font.Unit);
+            gbCTSUConfig.Controls.Add(numSelfTargetValueOffset);
+
+            lbMutualTargetValueOffset = new Label();
+            lbMutualTargetValueOffset.Location = new Point(lbSelfTargetValueOffset.Location.X, lbSelfTargetValueOffset.Location.Y + lbSelfTargetValueOffset.Size.Height + 10);
+            lbMutualTargetValueOffset.Size = new Size(200, 30);
+            lbMutualTargetValueOffset.Text = "Mutual Target Value Offset: ";
+            lbMutualTargetValueOffset.Font = new Font(lbMutualTargetValueOffset.Font.Name, lbMutualTargetValueOffset.Font.Size + 2.0F, FontStyle.Bold, lbMutualTargetValueOffset.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbMutualTargetValueOffset);
+
+            numMutualTargetValueOffset = new NumericUpDown();
+            numMutualTargetValueOffset.Location = new Point(lbMutualTargetValueOffset.Location.X + lbMutualTargetValueOffset.Size.Width + 10, lbMutualTargetValueOffset.Location.Y);
+            numMutualTargetValueOffset.Size = new Size(50, 30);
+            numMutualTargetValueOffset.Value = 0;
+            numMutualTargetValueOffset.Font = new Font(numMutualTargetValueOffset.Font.Name, numMutualTargetValueOffset.Font.Size + 2.0F, FontStyle.Bold, numMutualTargetValueOffset.Font.Unit);
+            gbCTSUConfig.Controls.Add(numMutualTargetValueOffset);
+
+            lbSensorAutoResetTimeout = new Label();
+            lbSensorAutoResetTimeout.Location = new Point(lbMutualTargetValueOffset.Location.X, lbMutualTargetValueOffset.Location.Y + lbMutualTargetValueOffset.Size.Height + 10);
+            lbSensorAutoResetTimeout.Size = new Size(200, 30);
+            lbSensorAutoResetTimeout.Text = "Sensor Auto Reset Timeout: ";
+            lbSensorAutoResetTimeout.Font = new Font(lbSensorAutoResetTimeout.Font.Name, lbSensorAutoResetTimeout.Font.Size + 2.0F, FontStyle.Bold, lbSensorAutoResetTimeout.Font.Unit);
+            gbCTSUConfig.Controls.Add(lbSensorAutoResetTimeout);
+
+            numSensorAutoResetTimeout = new NumericUpDown();
+            numSensorAutoResetTimeout.Location = new Point(lbSensorAutoResetTimeout.Location.X + lbSensorAutoResetTimeout.Size.Width + 10, lbSensorAutoResetTimeout.Location.Y);
+            numSensorAutoResetTimeout.Size = new Size(50, 30);
+            numSensorAutoResetTimeout.Value = 0;
+            numSensorAutoResetTimeout.Font = new Font(numSensorAutoResetTimeout.Font.Name, numSensorAutoResetTimeout.Font.Size + 2.0F, FontStyle.Bold, numSensorAutoResetTimeout.Font.Unit);
+            gbCTSUConfig.Controls.Add(numSensorAutoResetTimeout);
+
+
+            gbHwConfig = new GroupBox();
+            //gbHwConfig.Location = new Point(gbFilterConfig.Location.X, gbFilterConfig.Location.Y + gbFilterConfig.Size.Height + 15);
+            gbHwConfig.Location = new Point(gbGlobalConfig.Location.X, gbGlobalConfig.Location.Y + gbGlobalConfig.Size.Height + 15);
+            gbHwConfig.Size = new Size(300, 300);
+            gbHwConfig.Text = "Hardware Config";
+            gbHwConfig.Font = new Font(gbHwConfig.Font.Name, gbHwConfig.Font.Size + 2.0F, gbHwConfig.Font.Style, gbHwConfig.Font.Unit);
+            this.Controls.Add(gbHwConfig);
+
+            lbInvalidSensorConnection = new Label();
+            lbInvalidSensorConnection.Location = new Point(10, 25);
+            lbInvalidSensorConnection.Size = new Size(150, 30);
+            lbInvalidSensorConnection.Text = "Inactive SNS Conn: ";
+            lbInvalidSensorConnection.Font = new Font(lbInvalidSensorConnection.Font.Name, lbInvalidSensorConnection.Font.Size + 2.0F, FontStyle.Bold, lbInvalidSensorConnection.Font.Unit);
+            gbHwConfig.Controls.Add(lbInvalidSensorConnection);
+
+            cbInvalidSensorConnection = new ComboBox();
+            cbInvalidSensorConnection.Location = new Point(lbInvalidSensorConnection.Location.X + lbInvalidSensorConnection.Size.Width, lbInvalidSensorConnection.Location.Y);
+            cbInvalidSensorConnection.Size = new Size(120, 50);
+            cbInvalidSensorConnection.Font = new Font(cbInvalidSensorConnection.Font.Name, cbInvalidSensorConnection.Font.Size + 2.0F, cbInvalidSensorConnection.Font.Style, cbInvalidSensorConnection.Font.Unit);
+            foreach (string s in lstInvalidSensorConnection)
+            {
+                cbInvalidSensorConnection.Items.Add(s);
+            }
+            cbInvalidSensorConnection.SelectedIndex = 0;
+            gbHwConfig.Controls.Add(cbInvalidSensorConnection);
+
+            lbHostIntPolarity = new Label();
+            lbHostIntPolarity.Location = new Point(10, lbInvalidSensorConnection.Location.Y + lbInvalidSensorConnection.Size.Height + 10);
+            lbHostIntPolarity.Size = new Size(130, 30);
+            lbHostIntPolarity.Text = "Host INT Polarity: ";
+            lbHostIntPolarity.Font = new Font(lbHostIntPolarity.Font.Name, lbHostIntPolarity.Font.Size + 2.0F, FontStyle.Bold, lbHostIntPolarity.Font.Unit);
+            gbHwConfig.Controls.Add(lbHostIntPolarity);
+
+            cbHostIntPolarity = new ComboBox();
+            cbHostIntPolarity.Location = new Point(lbHostIntPolarity.Location.X + lbHostIntPolarity.Size.Width + 10, lbHostIntPolarity.Location.Y);
+            cbHostIntPolarity.Size = new Size(130, 50);
+            cbHostIntPolarity.Font = new Font(cbHostIntPolarity.Font.Name, cbHostIntPolarity.Font.Size + 2.0F, cbHostIntPolarity.Font.Style, cbHostIntPolarity.Font.Unit);
+            foreach (string s in lstHostIntPolarity)
+            {
+                cbHostIntPolarity.Items.Add(s);
+            }
+            cbHostIntPolarity.SelectedIndex = 0;
+            gbHwConfig.Controls.Add(cbHostIntPolarity);
+
+            lbHostIntDriveMode = new Label();
+            lbHostIntDriveMode.Location = new Point(10, lbHostIntPolarity.Location.Y + lbHostIntPolarity.Size.Height + 10);
+            lbHostIntDriveMode.Size = new Size(130, 30);
+            lbHostIntDriveMode.Text = "Host INT Drive: ";
+            lbHostIntDriveMode.Font = new Font(lbHostIntDriveMode.Font.Name, lbHostIntDriveMode.Font.Size + 2.0F, FontStyle.Bold, lbHostIntDriveMode.Font.Unit);
+            gbHwConfig.Controls.Add(lbHostIntDriveMode);
+
+            cbHostIntDriveMode = new ComboBox();
+            cbHostIntDriveMode.Location = new Point(lbHostIntDriveMode.Location.X + lbHostIntDriveMode.Size.Width + 10, lbHostIntDriveMode.Location.Y);
+            cbHostIntDriveMode.Size = new Size(130, 50);
+            cbHostIntDriveMode.Font = new Font(cbHostIntDriveMode.Font.Name, cbHostIntDriveMode.Font.Size + 2.0F, cbHostIntDriveMode.Font.Style, cbHostIntDriveMode.Font.Unit);
+            foreach (string s in lstHostIntDriveMode)
+            {
+                cbHostIntDriveMode.Items.Add(s);
+            }
+            cbHostIntDriveMode.SelectedIndex = 0;
+            gbHwConfig.Controls.Add(cbHostIntDriveMode);
+
+            lbHostIntTimeout = new Label();
+            lbHostIntTimeout.Location = new Point(10, lbHostIntDriveMode.Location.Y + lbHostIntDriveMode.Size.Height + 10);
+            lbHostIntTimeout.Size = new Size(130, 30);
+            lbHostIntTimeout.Text = "Host INT Timeout: ";
+            lbHostIntTimeout.Font = new Font(lbHostIntTimeout.Font.Name, lbHostIntTimeout.Font.Size + 2.0F, FontStyle.Bold, lbHostIntTimeout.Font.Unit);
+            gbHwConfig.Controls.Add(lbHostIntTimeout);
+
+            numHostIntTimeout = new NumericUpDown();
+            numHostIntTimeout.Location = new Point(lbHostIntTimeout.Location.X + lbHostIntTimeout.Size.Width + 10, lbHostIntTimeout.Location.Y);
+            numHostIntTimeout.Size = new Size(130, 30);
+            numHostIntTimeout.Minimum = 0;
+            numHostIntTimeout.Maximum = 2000;
+            numHostIntTimeout.Value = 1000;
+            numHostIntTimeout.Font = new Font(numHostIntTimeout.Font.Name, numHostIntTimeout.Font.Size + 2.0F, FontStyle.Bold, numHostIntTimeout.Font.Unit);
+            gbHwConfig.Controls.Add(numHostIntTimeout);
+            
+            lbI2CAddrHWSelection = new Label();
+            lbI2CAddrHWSelection.Location = new Point(10, lbHostIntTimeout.Location.Y + lbHostIntTimeout.Size.Height + 10);
+            lbI2CAddrHWSelection.Size = new Size(180, 30);
+            lbI2CAddrHWSelection.Text = "Enable I2C HW Pin Select: ";
+            lbI2CAddrHWSelection.Font = new Font(lbI2CAddrHWSelection.Font.Name, lbI2CAddrHWSelection.Font.Size + 2.0F, FontStyle.Bold, lbI2CAddrHWSelection.Font.Unit);
+            gbHwConfig.Controls.Add(lbI2CAddrHWSelection);
+
+            ckI2CAddrHWSelection = new CheckBox();
+            ckI2CAddrHWSelection.Location = new Point(lbI2CAddrHWSelection.Location.X + lbI2CAddrHWSelection.Size.Width + 30, lbI2CAddrHWSelection.Location.Y - 6);
+            ckI2CAddrHWSelection.Size = new Size(30, 30);
+            ckI2CAddrHWSelection.Checked = false;
+            gbHwConfig.Controls.Add(ckI2CAddrHWSelection);
+
+            lbI2CAddrSWSelection = new Label();
+            lbI2CAddrSWSelection.Location = new Point(10, lbI2CAddrHWSelection.Location.Y + lbI2CAddrHWSelection.Size.Height + 10);
+            lbI2CAddrSWSelection.Size = new Size(150, 30);
+            lbI2CAddrSWSelection.Text = "I2C Address Select: ";
+            lbI2CAddrSWSelection.Font = new Font(lbI2CAddrSWSelection.Font.Name, lbI2CAddrSWSelection.Font.Size + 2.0F, FontStyle.Bold, lbI2CAddrSWSelection.Font.Unit);
+            gbHwConfig.Controls.Add(lbI2CAddrSWSelection);
+
+            numI2CAddrSWSelection = new NumericUpDown();
+            numI2CAddrSWSelection.Location = new Point(lbI2CAddrSWSelection.Location.X + lbI2CAddrSWSelection.Size.Width + 10, lbI2CAddrSWSelection.Location.Y);
+            numI2CAddrSWSelection.Size = new Size(100, 30);
+            numI2CAddrSWSelection.Minimum = 0;
+            numI2CAddrSWSelection.Maximum = 256;
+            numI2CAddrSWSelection.Value = 8;
+            if (ckI2CAddrHWSelection.Checked == true)
+            {
+                numI2CAddrSWSelection.Enabled = false;
+                numI2CAddrSWSelection.Value = 0;
+            }
+            numI2CAddrSWSelection.Font = new Font(numI2CAddrSWSelection.Font.Name, numI2CAddrSWSelection.Font.Size + 2.0F, FontStyle.Bold, numI2CAddrSWSelection.Font.Unit);
+            gbHwConfig.Controls.Add(numI2CAddrSWSelection);
+
+
+            lbI2CInactivityTimeout = new Label();
+            lbI2CInactivityTimeout.Location = new Point(10, lbI2CAddrSWSelection.Location.Y + lbI2CAddrSWSelection.Size.Height + 10);
+            lbI2CInactivityTimeout.Size = new Size(150, 30);
+            lbI2CInactivityTimeout.Text = "I2C Inactivity Timeout: ";
+            lbI2CInactivityTimeout.Font = new Font(lbI2CInactivityTimeout.Font.Name, lbI2CInactivityTimeout.Font.Size + 2.0F, FontStyle.Bold, lbI2CInactivityTimeout.Font.Unit);
+            gbHwConfig.Controls.Add(lbI2CInactivityTimeout);
+
+            numI2CInactivityTimeout = new NumericUpDown();
+            numI2CInactivityTimeout.Location = new Point(lbI2CInactivityTimeout.Location.X + lbI2CInactivityTimeout.Size.Width + 10, lbI2CInactivityTimeout.Location.Y);
+            numI2CInactivityTimeout.Size = new Size(100, 30);
+            numI2CInactivityTimeout.Minimum = 0;
+            numI2CInactivityTimeout.Maximum = 256;
+            numI2CInactivityTimeout.Value = 10;
+            numI2CInactivityTimeout.Font = new Font(numI2CInactivityTimeout.Font.Name, numI2CInactivityTimeout.Font.Size + 2.0F, FontStyle.Bold, numI2CInactivityTimeout.Font.Unit);
+            gbHwConfig.Controls.Add(numI2CInactivityTimeout);
+
+            gbBtnEnable = new GroupBox();
+            gbBtnEnable.Location = new Point(gbFilterConfig.Location.X + gbFilterConfig.Size.Width + 10, gbFilterConfig.Location.Y);
+            gbBtnEnable.Size = new Size(590, 230);
+            gbBtnEnable.Text = "Button Enable";
+            gbBtnEnable.Font = new Font(gbBtnEnable.Font.Name, gbBtnEnable.Font.Size + 2.0F, gbBtnEnable.Font.Style, gbBtnEnable.Font.Unit);
+            this.Controls.Add(gbBtnEnable);
+
+            btnEnable = new SensorButton[24];
+
+            int row = 0;
+            int x = 0;
+
+            for (int i = 0; i < 24; i++)
+            {
+                btnEnable[i] = new SensorButton(i);
+                btnEnable[i].Location = new Point(20 + (x * 70), 30 + (row * 60));
+                btnEnable[i].Size = new Size(60, 50);
+                btnEnable[i].Text = String.Format("S{0}", i);
+                btnEnable[i].Font = new Font(btnEnable[i].Font.Name, btnEnable[i].Font.Size + 2.0F, btnEnable[i].Font.Style, btnEnable[i].Font.Unit);
+                btnEnable[i].Click += new EventHandler(this.btnEnable_Click);
+                gbBtnEnable.Controls.Add(btnEnable[i]);
+                if (i == 7 || i == 15)
+                {
+                    row++;
+                    x = 0;
+                }
+                else {
+                    x++;
+                }
+            }
+
+            gbLowPowerBtnEnable = new GroupBox();
+            gbLowPowerBtnEnable.Location = new Point(gbBtnEnable.Location.X, gbBtnEnable.Location.Y + gbBtnEnable.Size.Height + 10);
+            gbLowPowerBtnEnable.Size = new Size(590, 230);
+            gbLowPowerBtnEnable.Text = "Low Power Enable";
+            gbLowPowerBtnEnable.Font = new Font(gbLowPowerBtnEnable.Font.Name, gbLowPowerBtnEnable.Font.Size + 2.0F, gbLowPowerBtnEnable.Font.Style, gbLowPowerBtnEnable.Font.Unit);
+            this.Controls.Add(gbLowPowerBtnEnable);
+
+            btnLPEnable = new SensorButton[24];
+
+            row = 0;
+            x = 0;
+
+            for (int i = 0; i < 24; i++)
+            {
+                btnLPEnable[i] = new SensorButton(i);
+                btnLPEnable[i].Location = new Point(20 + (x * 70), 30 + (row * 60));
+                btnLPEnable[i].Size = new Size(60, 50);
+                btnLPEnable[i].Text = String.Format("S{0}", i);
+                btnLPEnable[i].Enabled = false;
+                btnLPEnable[i].Font = new Font(btnLPEnable[i].Font.Name, btnLPEnable[i].Font.Size + 2.0F, btnLPEnable[i].Font.Style, btnLPEnable[i].Font.Unit);
+                btnLPEnable[i].Click += new EventHandler(this.btnLPMEnable_Click);
+                gbLowPowerBtnEnable.Controls.Add(btnLPEnable[i]);
+                if (i == 7 || i == 15)
+                {
+                    row++;
+                    x = 0;
+                }
+                else
+                {
+                    x++;
+                }
+            }
+
+            gbOtherConfig = new GroupBox();
+            gbOtherConfig.Location = new Point(gbLowPowerBtnEnable.Location.X, gbLowPowerBtnEnable.Location.Y + gbLowPowerBtnEnable.Size.Height + 10);
+            gbOtherConfig.Size = new Size(300, 150);
+            gbOtherConfig.Text = "Other Config";
+            gbOtherConfig.Font = new Font(gbOtherConfig.Font.Name, gbOtherConfig.Font.Size + 2.0F, gbOtherConfig.Font.Style, gbOtherConfig.Font.Unit);
+            this.Controls.Add(gbOtherConfig);
+
+            lbOnFreq = new Label();
+            lbOnFreq.Location = new Point(15,30);
+            lbOnFreq.Size = new Size(150, 30);
+            lbOnFreq.Text = "On Frequency: ";
+            lbOnFreq.Font = new Font(lbOnFreq.Font.Name, lbOnFreq.Font.Size + 2.0F, FontStyle.Bold, lbOnFreq.Font.Unit);
+            gbOtherConfig.Controls.Add(lbOnFreq);
+
+            numOnFreq = new NumericUpDown();
+            numOnFreq.Location = new Point(lbOnFreq.Location.X + lbOnFreq.Size.Width + 10, lbOnFreq.Location.Y);
+            numOnFreq.Size = new Size(80, 30);
+            numOnFreq.Value = 0;
+            numOnFreq.Font = new Font(numOnFreq.Font.Name, numOnFreq.Font.Size + 2.0F, FontStyle.Bold, numOnFreq.Font.Unit);
+            gbOtherConfig.Controls.Add(numOnFreq);
+
+            lbDriftFreq = new Label();
+            lbDriftFreq.Location = new Point(lbOnFreq.Location.X, lbOnFreq.Location.Y + lbOnFreq.Size.Height + 10);
+            lbDriftFreq.Size = new Size(150, 30);
+            lbDriftFreq.Text = "Drift Frequency: ";
+            lbDriftFreq.Font = new Font(lbDriftFreq.Font.Name, lbDriftFreq.Font.Size + 2.0F, FontStyle.Bold, lbDriftFreq.Font.Unit);
+            gbOtherConfig.Controls.Add(lbDriftFreq);
+
+            numDriftFreq = new NumericUpDown();
+            numDriftFreq.Location = new Point(lbDriftFreq.Location.X + lbDriftFreq.Size.Width + 10, lbDriftFreq.Location.Y);
+            numDriftFreq.Size = new Size(80, 30);
+            numDriftFreq.Value = 0;
+            numDriftFreq.Font = new Font(numDriftFreq.Font.Name, numDriftFreq.Font.Size + 2.0F, FontStyle.Bold, numDriftFreq.Font.Unit);
+            gbOtherConfig.Controls.Add(numDriftFreq);
+
+            lbCancelDriftFreq = new Label();
+            lbCancelDriftFreq.Location = new Point(lbDriftFreq.Location.X, lbDriftFreq.Location.Y + lbDriftFreq.Size.Height + 10);
+            lbCancelDriftFreq.Size = new Size(150, 30);
+            lbCancelDriftFreq.Text = "Cancel Drift Freq: ";
+            lbCancelDriftFreq.Font = new Font(lbCancelDriftFreq.Font.Name, lbCancelDriftFreq.Font.Size + 2.0F, FontStyle.Bold, lbCancelDriftFreq.Font.Unit);
+            gbOtherConfig.Controls.Add(lbCancelDriftFreq);
+
+            numCancelDriftFreq = new NumericUpDown();
+            numCancelDriftFreq.Location = new Point(lbCancelDriftFreq.Location.X + lbCancelDriftFreq.Size.Width + 10, lbCancelDriftFreq.Location.Y);
+            numCancelDriftFreq.Size = new Size(80, 30);
+            numCancelDriftFreq.Value = 0;
+            numCancelDriftFreq.Font = new Font(numCancelDriftFreq.Font.Name, numCancelDriftFreq.Font.Size + 2.0F, FontStyle.Bold, numCancelDriftFreq.Font.Unit);
+            gbOtherConfig.Controls.Add(numCancelDriftFreq);
+        }
+
+        private void btnEnable_Click(Object sender, EventArgs e)
+        {
+            SensorButton btn = (SensorButton)sender;
+            int id = btn.GetBtnId();
+
+            if (btn.Selected == false)
+            {
+                btn.Selected = true;
+                btn.BackColor = Color.LightGreen;
+                btnLPEnable[id].Enabled = true;
+            }
+            else
+            {
+                btn.Selected = false;
+                btn.BackColor = default(Color);
+                btnLPEnable[id].Enabled = false;
+            }
+        }
+
+        private void btnLPMEnable_Click(Object sender, EventArgs e)
+        {
+            SensorButton btn = (SensorButton)sender;
+            int id = btn.GetBtnId();
+
+            if (btn.Selected == false)
+            {
+                btn.Selected = true;
+                btn.BackColor = Color.LightGreen;
+            }
+            else
+            {
+                btn.Selected = false;
+                btn.BackColor = default(Color);
+            }
+        }
+
+        public override void updateView(Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+        }
+        public override void updateView(string section, Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+            if (section.Length == 1)
+            {
+                int slave_id = int.Parse(section);
+                byte[] dev_config_data = model.getDevConfigData(slave_id);
+            }
+        }
+    }
+
+    public class RX130TouchCapConfigTabPage : TouchCommanderTabBase
+    {
+        ButtonConfigGroup btnCfgGroup;
+        int slave_id;
+
+        public RX130TouchCapConfigTabPage(TouchCommanderController c, int slave_id) : base(c)
+        {
+            this.slave_id = slave_id;
+            this.Text = String.Format("Slave {0}: RX130 Button Configuration", slave_id);
+            initView();
+        }
+
+        private void initView()
+        {
+            btnCfgGroup = new ButtonConfigGroup(0);
+            btnCfgGroup.Location = new Point(10, 5);
+            btnCfgGroup.Size = new Size(920, 780);
+            this.Controls.Add(btnCfgGroup);
+        }
+
+        public override void updateView(Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+        }
+        public override void updateView(string section, Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+
+            if (section.Length == 1)
+            {
+                int slave_id = int.Parse(section);
+                byte[] cap_config_data = model.getCapConfigData(slave_id);
+
+                for (int i = 0; i < 24; i++)
+                {
+                    btnCfgGroup.numHysteresis[i].Value = cap_config_data[16 + (i * 11)] | (cap_config_data[16 + (i * 11) + 1] << 8);
+                    btnCfgGroup.numFingerThreshold[i].Value = cap_config_data[18 + (i * 11)] | (cap_config_data[18 + (i * 11) + 1] << 8);
+                    btnCfgGroup.numSnsOffsetAdj[i].Value = cap_config_data[20 + (i * 11)] | (cap_config_data[20 + (i * 11) + 1] << 8);
+                    btnCfgGroup.numMeasurementCount[i].Value = cap_config_data[22 + (i * 11)];
+                    btnCfgGroup.numClockSetting[i].Value = cap_config_data[23 + (i * 11)];
+                    btnCfgGroup.numFreqDiv[i].Value = cap_config_data[24 + (i * 11)];
+                    btnCfgGroup.numFilterThreshold[i].Value = cap_config_data[25 + (i * 11)];
+                }
+            }
+        }
+    }
+
+    public class TouchConfigTabPage : TouchCommanderTabBase
+    {
+        private bool bViewInitComplete;
+        private Button btnLoadFromFile;
+        private Button btnSaveToFile;
+        private Button btnLoadFromDevice;
+        private Button btnWriteToDevice;
+        private Button btnClear;
+        private ComboBox cbSlaveIdSelect;
+        private ComboBox cbTouchChipType;
+        private ComboBox cbTouchSeningMethod;
+        private List<string> lstTouchChipTypes = new List<string> { "RX130", "PSoC4000", "PSoC4000S", "PSoC4100S" };
+        private List<string> lstTouchSeningMethods = new List<string> { "Self", "Mutual" };
+        private int iNumberOfSlaves;
+        private TabControl tcConfigTabs;
+        private String toucHwType;
+        private bool bMutualTouchType;
+        private int iSelectedSlaveId;
+
+        private Dictionary<int, TouchCommanderTabBase> devCfgViewDict;
+        private Dictionary<int, TouchCommanderTabBase> capCfgViewDict;
+
+        public TouchConfigTabPage(TouchCommanderController c) : base(c)
+        {
+            this.Text = "Touch Configuration";
+            this.bViewInitComplete = false;
+            this.iNumberOfSlaves = 0;
+            this.iSelectedSlaveId = 0;
+            devCfgViewDict = new Dictionary<int, TouchCommanderTabBase>();
+            capCfgViewDict = new Dictionary<int, TouchCommanderTabBase>();
+        }
+
+        private void initView(object data)
+        {
+            cbSlaveIdSelect = new ComboBox();
+            cbSlaveIdSelect.Location = new Point(15, 15);
+            cbSlaveIdSelect.Size = new Size(180, 50);
+            cbSlaveIdSelect.Text = "Select the Slave Id";
+            cbSlaveIdSelect.Font = new Font(cbSlaveIdSelect.Font.Name, cbSlaveIdSelect.Font.Size + 2.0F, cbSlaveIdSelect.Font.Style, cbSlaveIdSelect.Font.Unit);
+            for (int i = 0; i < iNumberOfSlaves; i++)
+            {
+                cbSlaveIdSelect.Items.Add(String.Format("Slave {0}", i));
+            }
+
+            if (iNumberOfSlaves == 1)
+            {
+                cbSlaveIdSelect.Enabled = false;
+            }
+            cbSlaveIdSelect.SelectedIndex = 0;
+            iSelectedSlaveId = cbSlaveIdSelect.SelectedIndex;
+            cbSlaveIdSelect.SelectedIndexChanged += new System.EventHandler(cbSlaveIdSelect_SelectedIndexChanged);
+            this.Controls.Add(cbSlaveIdSelect);
+
+            cbTouchChipType = new ComboBox();
+            cbTouchChipType.Location = new Point(cbSlaveIdSelect.Location.X, cbSlaveIdSelect.Location.Y + cbSlaveIdSelect.Size.Height + 20);
+            cbTouchChipType.Size = new Size(180, 50);
+            cbTouchChipType.Text = "Select the Touch Micro";
+            cbTouchChipType.Font = new Font(cbTouchChipType.Font.Name, cbTouchChipType.Font.Size + 2.0F, cbTouchChipType.Font.Style, cbTouchChipType.Font.Unit);
+            foreach (string s in lstTouchChipTypes)
+            {
+                cbTouchChipType.Items.Add(s);
+            }
+            cbTouchChipType.SelectedIndexChanged += new System.EventHandler(cbTouchChipType_SelectedIndexChanged);
+            this.Controls.Add(cbTouchChipType);
+
+            cbTouchSeningMethod = new ComboBox();
+            //cbTouchSeningMethod.Location = new Point(cbTouchChipType.Location.X + cbTouchChipType.Size.Width + 30, 15);
+            cbTouchSeningMethod.Location = new Point(cbTouchChipType.Location.X, cbTouchChipType.Location.Y + cbTouchChipType.Size.Height + 20);
+            cbTouchSeningMethod.Size = new Size(180, 50);
+            cbTouchSeningMethod.Text = "Select Sensing Method";
+            cbTouchSeningMethod.Font = new Font(cbTouchSeningMethod.Font.Name, cbTouchSeningMethod.Font.Size + 2.0F, cbTouchSeningMethod.Font.Style, cbTouchSeningMethod.Font.Unit);
+            foreach (string s in lstTouchSeningMethods)
+            {
+                cbTouchSeningMethod.Items.Add(s);
+            }
+            cbTouchSeningMethod.Enabled = false;
+            cbTouchSeningMethod.SelectedIndexChanged += new System.EventHandler(cbTouchSeningMethod_SelectedIndexChanged);
+            this.Controls.Add(cbTouchSeningMethod);
+
+
+            btnLoadFromFile = new Button();
+            //btnLoadFromFile.Location = new Point(cbTouchSeningMethod.Location.X + cbTouchSeningMethod.Size.Width + 30, 15);
+            btnLoadFromFile.Location = new Point(cbTouchSeningMethod.Location.X, cbTouchSeningMethod.Location.Y + cbTouchSeningMethod.Size.Height + 20);
+            btnLoadFromFile.Size = new Size(180, 25);
+            btnLoadFromFile.Font = new Font(btnLoadFromFile.Font.Name, btnLoadFromFile.Font.Size + 2.0F, btnLoadFromFile.Font.Style, btnLoadFromFile.Font.Unit);
+            btnLoadFromFile.Text = "Load Config From File";
+            btnLoadFromFile.BackColor = Color.LightGreen;
+            btnLoadFromFile.Visible = true;
+            btnLoadFromFile.Click += new EventHandler(this.btnLoadFromFile_Click);
+            this.Controls.Add(btnLoadFromFile);
+
+            btnSaveToFile = new Button();
+            //btnSaveToFile.Location = new Point(btnLoadFromFile.Location.X + btnLoadFromFile.Size.Width + 30, 15);
+            btnSaveToFile.Location = new Point(btnLoadFromFile.Location.X, btnLoadFromFile.Location.Y + btnLoadFromFile.Size.Height + 20);
+            btnSaveToFile.Size = new Size(180, 25);
+            btnSaveToFile.Font = new Font(btnSaveToFile.Font.Name, btnSaveToFile.Font.Size + 2.0F, btnSaveToFile.Font.Style, btnSaveToFile.Font.Unit);
+            btnSaveToFile.Text = "Save Config To File";
+            btnSaveToFile.BackColor = Color.LightGreen;
+            btnSaveToFile.Visible = true;
+            btnLoadFromFile.Click += new EventHandler(this.btnSaveToFile_Click);
+            this.Controls.Add(btnSaveToFile);
+
+            btnLoadFromDevice = new Button();
+            //btnLoadFromDevice.Location = new Point(btnSaveToFile.Location.X + btnSaveToFile.Size.Width + 30, 15);
+            btnLoadFromDevice.Location = new Point(btnSaveToFile.Location.X, btnSaveToFile.Location.Y + btnSaveToFile.Size.Height + 20);
+            btnLoadFromDevice.Size = new Size(180, 25);
+            btnLoadFromDevice.Font = new Font(btnLoadFromDevice.Font.Name, btnLoadFromDevice.Font.Size + 2.0F, btnLoadFromDevice.Font.Style, btnLoadFromDevice.Font.Unit);
+            btnLoadFromDevice.Text = "Load Config From Device";
+            btnLoadFromDevice.BackColor = Color.LightSeaGreen;
+            btnLoadFromDevice.Visible = true;
+            btnLoadFromFile.Click += new EventHandler(this.btnLoadFromDevice_Click);
+            this.Controls.Add(btnLoadFromDevice);
+
+            btnWriteToDevice = new Button();
+            //btnWriteToDevice.Location = new Point(btnLoadFromDevice.Location.X + btnLoadFromDevice.Size.Width + 30, 15);
+            btnWriteToDevice.Location = new Point(btnLoadFromDevice.Location.X, btnLoadFromDevice.Location.Y + btnLoadFromDevice.Size.Height + 20);
+            btnWriteToDevice.Size = new Size(180, 25);
+            btnWriteToDevice.Font = new Font(btnWriteToDevice.Font.Name, btnWriteToDevice.Font.Size + 2.0F, btnWriteToDevice.Font.Style, btnWriteToDevice.Font.Unit);
+            btnWriteToDevice.Text = "Write Config To Device";
+            btnWriteToDevice.BackColor = Color.LightSeaGreen;
+            btnWriteToDevice.Visible = true;
+            btnLoadFromFile.Click += new EventHandler(this.btnWriteToDevice_Click);
+            this.Controls.Add(btnWriteToDevice);
+
+            btnClear = new Button();
+            //btnClear.Location = new Point(btnWriteToDevice.Location.X + btnWriteToDevice.Size.Width + 30, 15);
+            btnClear.Location = new Point(btnWriteToDevice.Location.X, btnWriteToDevice.Location.Y + btnWriteToDevice.Size.Height + 20);
+            btnClear.Size = new Size(180, 25);
+            btnClear.Font = new Font(btnClear.Font.Name, btnClear.Font.Size + 2.0F, btnClear.Font.Style, btnClear.Font.Unit);
+            btnClear.Text = "Clear";
+            btnClear.BackColor = Color.Khaki;
+            btnClear.Visible = true;
+            btnClear.Click += new EventHandler(this.btnClear_Click);
+            this.Controls.Add(btnClear);
+
+            tcConfigTabs = new TabControl();
+            tcConfigTabs.Location = new Point(cbSlaveIdSelect.Location.X + cbSlaveIdSelect.Size.Width + 10, cbSlaveIdSelect.Location.Y - 10);
+            tcConfigTabs.Size = new Size(this.Width - 220, this.Height - 8);
+            this.Controls.Add(tcConfigTabs);
+
+            this.bViewInitComplete = true;
+        }
+
+        private void cbSlaveIdSelect_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            iSelectedSlaveId = cbSlaveIdSelect.SelectedIndex;
+        }
+
+        private void cbTouchChipType_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            cbTouchSeningMethod.Enabled = true;
+        }
+
+        private void cbTouchSeningMethod_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            bMutualTouchType = cbTouchSeningMethod.Text == "Mutual" ? true : false;
+            cbTouchChipType.Enabled = false;
+
+            for (int i = 0; i < iNumberOfSlaves; i++)
+            {
+                if (cbTouchChipType.Text == "RX130")
+                {
+                    if (devCfgViewDict.ContainsKey(i) == false)
+                    {
+                        RX130TouchDevConfigTabPage dev_tab = new RX130TouchDevConfigTabPage(control, i);
+                        devCfgViewDict.Add(i, dev_tab);
+                        tcConfigTabs.Controls.Add(dev_tab);
+                    }
+//                    tcConfigTabs.Controls.Remove(devCfgViewDict[i]);
+//                    devCfgViewDict.Remove(i);
+
+
+                    if (capCfgViewDict.ContainsKey(i) == false)
+                    {
+                        RX130TouchCapConfigTabPage cap_tab = new RX130TouchCapConfigTabPage(control, i);
+                        capCfgViewDict.Add(i, cap_tab);
+                        tcConfigTabs.Controls.Add(cap_tab);
+                    }
+//                    tcConfigTabs.Controls.Remove(capCfgViewDict[i]);
+//                    capCfgViewDict.Remove(i);
+                    TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+                    model.createConfigModel((byte)i, cbTouchChipType.Text, cbTouchSeningMethod.Text);
+                }
+                else if (cbTouchChipType.SelectedText == "PSoC4000")
+                {
+                }
+                else
+                {
+                }
+            }
+        }
+
+        private byte[] StringToByteArray(string hex)
+        {
+            return Enumerable.Range(0, hex.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                             .ToArray();
+        }
+
+        private void btnLoadFromFile_Click(object sender, System.EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "txt files (*.txt)|*.txt|HEX Files (*.hex)|*.hex|All files (*.*)|*.*";
+            openFileDialog.FilterIndex = 2;
+            openFileDialog.Multiselect = false;
+            DialogResult result = openFileDialog.ShowDialog(); // Show the dialog.
+            if (result != DialogResult.OK)
+            {
+                return;
+            }
+
+            string file = openFileDialog.FileName;
+            string config_text = String.Empty;
+
+            using (StreamReader sr = File.OpenText(file))
+            {
+                string s = String.Empty;
+                while ((s = sr.ReadLine()) != null)
+                {
+                    config_text = config_text + s;
+                }
+            }
+
+            byte[] config_data = StringToByteArray(config_text);
+
+            TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+            if (model != null)
+            {
+                byte[] data = new byte[5 + config_text.Length];
+                data[0] = (byte)iSelectedSlaveId;
+                data[1] = 0x00; //offset MSB
+                data[2] = 0x00; //offset LSB
+                data[3] = (byte)((config_text.Length >> 8) & 0xFF); //length MSB
+                data[4] = (byte)(config_text.Length & 0xFF); //length MSB
+                System.Buffer.BlockCopy(config_data, 0, data, 5, config_data.Length);
+                model.updateModel(data, "full");
+                this.devCfgViewDict[iSelectedSlaveId].updateView(String.Format("{0}", data[0]), (object)model);
+                this.capCfgViewDict[iSelectedSlaveId].updateView(String.Format("{0}", data[0]), (object)model);
+            }
+        }
+
+        private void btnSaveToFile_Click(object sender, System.EventArgs e)
+        {
+        }
+
+        private void btnLoadFromDevice_Click(object sender, System.EventArgs e)
+        {
+        }
+
+        private void btnWriteToDevice_Click(object sender, System.EventArgs e)
+        {
+        }
+        
+        private void btnClear_Click(object sender, System.EventArgs e)
+        {
+            devCfgViewDict.Clear();
+            capCfgViewDict.Clear();
+            tcConfigTabs.Controls.Clear();
+
+            TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+            model.clearConfigModel();
+
+            cbTouchChipType.Enabled = true;
+            cbTouchChipType.Text = "Select the Touch Micro";
+            
+            cbTouchSeningMethod.Enabled = false;
+            cbTouchSeningMethod.Text = "Select Sensing Method";
+        }
+
+        public override void updateView(Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+            if (bViewInitComplete == false)
+            {
+                if (control.IsOfflineModeActive() == true)
+                {
+                    this.iNumberOfSlaves = 1;
+                }
+                else
+                {
+                    this.iNumberOfSlaves = control.GetNumberOfSlaves();
+                }
+                this.initView(data);
+            }
+        }
+
+        public override void updateView(string section, Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+        }
+    }
+}

@@ -1,0 +1,1269 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Windows.Forms;
+using WideBoxLib;
+
+namespace TouchCommanderGenericNamespace
+{
+
+    public class ConfigDataModel
+    {
+        public byte[] dev_cfg;
+        public byte[] cap_cfg;
+        private string chip_type;
+        private int dev_cfg_size;
+        private int dev_cfg_data_size;
+        private int cap_cfg_size;
+        private int cap_cfg_data_size;
+        private string capsense_type;
+        private UInt16 dev_cfg_start_offset;
+        private UInt16 dev_cfg_crc_offset;
+        private UInt16 cap_cfg_start_offset;
+        private UInt16 cap_cfg_crc_offset;
+        private UInt16 dev_cfg_crc_from_device;
+        private UInt16 cap_cfg_crc_from_device;
+
+        private byte[] tuning_data;
+        private int tuning_data_size;
+
+        public ConfigDataModel(string chip_type, string capsense_type)
+        {
+            this.chip_type = chip_type;
+            this.capsense_type = capsense_type;
+
+            if (chip_type == "RX130")
+            {
+                dev_cfg_size = 256;
+                dev_cfg = new byte[256];
+                dev_cfg_data_size = 88;
+                dev_cfg_start_offset = 0x184;
+                dev_cfg_crc_offset = 0x1DC;
+
+
+                cap_cfg_size = 512;
+                cap_cfg = new byte[512];
+                cap_cfg_data_size = 376;
+                cap_cfg_start_offset = 0x000C;
+                cap_cfg_crc_offset = 0x01DE;
+
+                tuning_data = new byte[256];
+                tuning_data_size = 0;
+            }
+            else if (chip_type == "PSoC4000S" || chip_type == "PSoC4100S")
+            {
+            }
+            else
+            {
+            }
+        }
+
+        public void updateFullModel(UInt16 offset_addr, byte[] data, int length)
+        {
+            System.Buffer.BlockCopy(data, 0, dev_cfg, 0, dev_cfg_size);
+            System.Buffer.BlockCopy(data, 256, cap_cfg, 0, cap_cfg_size);
+        }
+
+        public void updateDevModel(UInt16 offset_addr, byte[] data, int length)
+        {
+            System.Buffer.BlockCopy(data, 0, dev_cfg, offset_addr, length);
+            ushort CrcData = CalculateCrc16(dev_cfg, (ushort)dev_cfg_data_size, CCITT16_DEFAULT_SEED);
+            dev_cfg[dev_cfg_data_size] = (byte)(CrcData & 0xFF);
+            dev_cfg[dev_cfg_data_size + 1] = (byte)((CrcData >> 8) & 0xFF);
+        }
+
+        public void updateCapModel(UInt16 offset_addr, byte[] data, int length)
+        {
+            System.Buffer.BlockCopy(data, 0, cap_cfg, offset_addr, length);
+            ushort CrcData = CalculateCrc16(cap_cfg, (ushort)cap_cfg_data_size, CCITT16_DEFAULT_SEED);
+            cap_cfg[cap_cfg_data_size] = (byte)(CrcData & 0xFF);
+            cap_cfg[cap_cfg_data_size + 1] = (byte)((CrcData >> 8) & 0xFF);
+        }
+
+        public void updateFromDeviceCRC(byte[] data, int length)
+        {
+            dev_cfg_crc_from_device = (UInt16)((data[1] << 8) | (data[0]));
+            cap_cfg_crc_from_device = (UInt16)((data[3] << 8) | (data[2]));
+        }
+
+        public void updateTuningData(byte[] data, int length)
+        {
+            System.Buffer.BlockCopy(data, 0, tuning_data, 0, length);
+            tuning_data_size = length;
+        }
+
+        public byte[] getTuningData()
+        {
+            return tuning_data;
+        }
+
+        public int getTuningDataSize()
+        {
+            return tuning_data_size;
+        }
+
+        public UInt16 getDevCfgCRC()
+        {
+            UInt16 dev_cfg_crc = (UInt16)((dev_cfg[dev_cfg_data_size + 1] << 8) | dev_cfg[dev_cfg_data_size]);
+            return dev_cfg_crc;
+        }
+        public UInt16 getCapCfgCRC()
+        {
+            UInt16 cap_cfg_crc = (UInt16)((cap_cfg[cap_cfg_data_size + 1] << 8) | cap_cfg[cap_cfg_data_size]);
+            return cap_cfg_crc;
+        }
+
+        public UInt16 getDevCfgDeviceCRC()
+        {
+            return dev_cfg_crc_from_device;
+        }
+
+        public UInt16 getCapCfgDeviceCRC()
+        {
+            return cap_cfg_crc_from_device;
+        }
+
+        public int getDevCfgSize()
+        {
+            return dev_cfg_size;
+        }
+
+        public int getCapCfgSize()
+        {
+            return cap_cfg_size;
+        }
+
+        public int getDevCfgDataSize()
+        {
+            return dev_cfg_data_size;
+        }
+
+        public int getCapCfgDataSize()
+        {
+            return cap_cfg_data_size;
+        }
+
+        public UInt16 getDevCfgStartOffset()
+        {
+            return dev_cfg_start_offset;
+        }
+
+        public UInt16 getCapCfgStartOffset()
+        {
+            return cap_cfg_start_offset;
+        }
+
+        public UInt16 getDevCfgCRCOffset()
+        {
+            return dev_cfg_crc_offset;
+        }
+
+        public UInt16 getCapCfgCRCOffset()
+        {
+            return cap_cfg_crc_offset;
+        }
+
+        private const ushort CRC_BIT_WIDTH = 16;
+        private const ushort CRC_BIT4_MASK = 0x0F;
+        private const ushort CRC_BIT4_SHIFT = 0x04;
+        private const ushort CCITT16_DEFAULT_SEED = 0xffff;
+        private const ushort CCITT16_POLYNOM = 0x1021;
+
+        private ushort Calc4BitsCRC(byte value, ushort remainder)
+        {
+            byte tableIndex;
+
+            /* Divide the value by polynomial, via the CRC polynomial */
+            byte tempVar = ((byte)(CRC_BIT_WIDTH - CRC_BIT4_SHIFT));
+            tableIndex = (byte)(((byte)(value & CRC_BIT4_MASK)) ^ ((byte)((remainder) >> tempVar)));
+            remainder = (ushort)(((ushort)(CCITT16_POLYNOM * tableIndex)) ^ ((ushort)(remainder << CRC_BIT4_SHIFT)));
+            return remainder;
+        }
+
+        private ushort CalculateCrc16(byte[] configuration, ushort numOfBytes, ushort seed)
+        {
+            uint messageIndex;
+            byte byteValue;
+
+            /* don't make count down cycle! CRC will be different! */
+            for (messageIndex = 0; messageIndex < numOfBytes; messageIndex++)
+            {
+                byteValue = configuration[messageIndex];
+                seed = Calc4BitsCRC((byte)(byteValue >> CRC_BIT4_SHIFT), seed);
+                seed = Calc4BitsCRC(byteValue, seed);
+            }
+            //return seed;
+            return (ushort)~seed;
+        }
+    }
+
+    public class TouchConfigModel : TouchCommanderModelBase
+    {
+        private bool bModelCreated;
+        private Dictionary<int, ConfigDataModel> cfgModelDict;
+        private int no_of_slaves;
+        private int[] hbcounter;
+        private int[] keycounter;
+        private byte[] writeCmdResponseData;
+
+        public TouchConfigModel(TouchCommanderController c) : base(c)
+        {
+            cfgModelDict = new Dictionary<int, ConfigDataModel>();
+        }
+
+        public override void updateModel(Object d)
+        {
+            byte[] data = (byte[])d;
+
+            if (data != null && data[4] == 1 && data.Length == 6) //Write operation;
+            {
+                writeCmdResponseData = new byte[data.Length];
+                writeCmdResponseData = data;
+            }
+        }
+
+        public override void updateModel(Object d, string section)
+        {
+            byte[] data = (byte[])d;
+
+            if (section == "hmi_connected" || section == "hmi_disconnected")
+            {
+                return;
+            }
+
+            int slave_id = data[0];
+            UInt16 offset_addr = (UInt16)((data[1] << 8) | data[2]);
+            UInt16 data_length = (UInt16)((data[3] << 8) | data[4]);
+
+            if (section == "full")
+            {
+                Console.WriteLine("Updating full config for [{0}] slave starting from offset addr [{1}]\n", slave_id, offset_addr);
+                byte[] cfg_data = new byte[data_length];
+                System.Buffer.BlockCopy(data, 5, cfg_data, 0, data_length);
+                cfgModelDict[slave_id].updateFullModel(offset_addr, cfg_data, data_length);
+            }
+            else if (section == "dev_cfg")
+            {
+                Console.WriteLine("Updating dev config for [{0}] slave starting from offset addr [{1}]\n", slave_id, offset_addr);
+                byte[] cfg_data = new byte[data_length];
+                System.Buffer.BlockCopy(data, 5, cfg_data, 0, data_length);
+                cfgModelDict[slave_id].updateDevModel(offset_addr, cfg_data, data_length);
+            }
+            else if (section == "cap_cfg")
+            {
+                Console.WriteLine("Updating cap config for [{0}] slave starting from offset addr [{1}]\n", slave_id, offset_addr);
+                byte[] cfg_data = new byte[data_length];
+                System.Buffer.BlockCopy(data, 5, cfg_data, 0, data_length);
+                cfgModelDict[slave_id].updateCapModel(offset_addr, cfg_data, data_length);
+            }
+            else if ((section == "i2c_dev_cfg") || (section == "i2c_cap_cfg") || (section == "validate_crc") || (section == "i2c_read_crc"))
+            {
+                byte primary_i2c_addr = (byte)((data[1] >> 1) ^ 0x02);
+                bool i2c_write_op = data[4] == 1 ? true : false;
+
+                if (i2c_write_op == false)
+                {
+                    slave_id = control.GetSlaveIdFromI2CAddress((byte)(primary_i2c_addr));
+                    data_length = data[5];
+                    byte[] cfg_data = new byte[data_length];
+                    System.Buffer.BlockCopy(data, 6, cfg_data, 0, data_length);
+
+                    if (section == "i2c_dev_cfg")
+                    {
+                        offset_addr = (UInt16)(((data[2] << 8) | data[3]) - this.getDevCfgStartOffset(slave_id));
+                        cfgModelDict[slave_id].updateDevModel(offset_addr, cfg_data, data_length);
+                    }
+                    else if (section == "i2c_cap_cfg")
+                    {
+                        offset_addr = (UInt16)(((data[2] << 8) | data[3]) - this.getCapCfgStartOffset(slave_id));
+                        cfgModelDict[slave_id].updateCapModel(offset_addr, cfg_data, data_length);
+                    }
+                    else if (section == "validate_crc" || section == "i2c_read_crc")
+                    {
+                        cfgModelDict[slave_id].updateFromDeviceCRC(cfg_data, data_length);
+                    }
+                }
+            }
+            else if (section == "tuning_data")
+            {
+                byte primary_i2c_addr = (byte)(data[1] >> 1);
+                bool i2c_write_op = data[4] == 1 ? true : false;
+
+                if (i2c_write_op == false)
+                {
+                    slave_id = control.GetSlaveIdFromI2CAddress((byte)(primary_i2c_addr));
+                    data_length = data[5];
+                    byte[] tuning_data = new byte[data_length];
+                    System.Buffer.BlockCopy(data, 6, tuning_data, 0, data_length);
+                    if (cfgModelDict.ContainsKey(slave_id) == true)
+                    {
+                        cfgModelDict[slave_id].updateTuningData(tuning_data, data_length);
+                    }
+                }
+            }
+            else if (section == "Heart Beat")
+            {
+                if (no_of_slaves == 0)
+                {
+                    no_of_slaves = control.GetNumberOfSlaves();
+                    hbcounter = new int[no_of_slaves];
+                    keycounter = new int[no_of_slaves];
+                }
+
+                if (data.Length == (2 + (4 * no_of_slaves)))
+                {
+                    for (int i = 0; i < no_of_slaves; i++)
+                    {
+                        if (hbcounter.Length == no_of_slaves)
+                        {
+                            hbcounter[i] = (data[2 + (4 * i) + 1] << 8) | data[2 + (4 * i)];
+                            keycounter[i] = (data[4 + (4 * i) + 1] << 8) | data[4 + (4 * i)];
+                        }
+                    }
+                }
+            }
+        }
+
+        public void createConfigModel(byte slaveid, string chip_type, string capsense_type)
+        {
+            if (cfgModelDict.ContainsKey(slaveid) == false)
+            {
+                ConfigDataModel cfgmodel;
+                cfgmodel = new ConfigDataModel(chip_type, capsense_type);
+                cfgModelDict.Add(slaveid, cfgmodel);
+            }
+        }
+
+        public int getHearBeatCounter(byte slaveid)
+        {
+            if (hbcounter != null)
+            {
+                return hbcounter[slaveid];
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public int getKeyPressCounter(byte slaveid)
+        {
+            return keycounter[slaveid];
+        }
+
+        public void clearConfigModel()
+        {
+            cfgModelDict.Clear();
+        }
+
+        public byte[] getDevConfigData(int slaveid)
+        {
+            return cfgModelDict[slaveid].dev_cfg;
+        }
+        public byte[] getCapConfigData(int slaveid)
+        {
+            return cfgModelDict[slaveid].cap_cfg;
+        }
+
+        public byte[] getTuningData(int slaveid)
+        {
+            return cfgModelDict[slaveid].getTuningData();
+        }
+
+        public int getTuningDataSize(int slaveid)
+        {
+            return cfgModelDict[slaveid].getTuningDataSize();
+        }
+
+        public int getDevConfigSize(int slaveid)
+        {
+            return cfgModelDict[slaveid].getDevCfgSize();
+        }
+
+        public int getCapConfigSize(int slaveid)
+        {
+            return cfgModelDict[slaveid].getCapCfgSize();
+        }
+
+        public int getDevConfigDataSize(int slaveid)
+        {
+            return cfgModelDict[slaveid].getDevCfgDataSize();
+        }
+
+        public int getCapConfigDataSize(int slaveid)
+        {
+            return cfgModelDict[slaveid].getCapCfgDataSize();
+        }
+
+        public UInt16 getDevCfgStartOffset(int slaveid)
+        {
+            return cfgModelDict[slaveid].getDevCfgStartOffset();
+        }
+
+        public UInt16 getCapCfgStartOffset(int slaveid)
+        {
+            return cfgModelDict[slaveid].getCapCfgStartOffset();
+        }
+
+        public UInt16 getDevCfgCRCOffset(int slaveid)
+        {
+            return cfgModelDict[slaveid].getDevCfgCRCOffset();
+        }
+
+        public UInt16 getCapCfgCRCOffset(int slaveid)
+        {
+            return cfgModelDict[slaveid].getCapCfgCRCOffset();
+        }
+
+        public UInt16 getDevCfgCRC(int slaveid)
+        {
+            return cfgModelDict[slaveid].getDevCfgCRC();
+        }
+        public UInt16 getCapCfgCRC(int slaveid)
+        {
+            return cfgModelDict[slaveid].getCapCfgCRC();
+        }
+
+        public UInt16 getDevCfgDeviceCRC(int slaveid)
+        {
+            return cfgModelDict[slaveid].getDevCfgDeviceCRC();
+        }
+
+        public UInt16 getCapCfgDeviceCRC(int slaveid)
+        {
+            return cfgModelDict[slaveid].getCapCfgDeviceCRC();
+        }
+    }
+
+
+    public class TouchConfigTabPage : TouchCommanderTabBase
+    {
+        private bool bViewInitComplete;
+        private Button btnLoadFromFile;
+        private Button btnSaveToFile;
+        private Button btnLoadFromDevice;
+        private Button btnWriteToDevice;
+        private Button btnReadFromDeviceFlash;
+        private Button btnWriteToDeviceFlash;
+        private Button btnClear;
+        private Button btnSoftReset;
+        private Label lbHeartBeatCnt;
+        private Button btnFactoryDefault;
+        private ComboBox cbSlaveIdSelect;
+        private ComboBox cbTouchChipType;
+        private ComboBox cbTouchSeningMethod;
+        private List<string> lstTouchChipTypes = new List<string> { "RX130", "PSoC4000", "PSoC4000S", "PSoC4100S" };
+        private List<string> lstTouchSeningMethods = new List<string> { "Self", "Mutual" };
+        private int iNumberOfSlaves;
+        private TabControl tcConfigTabs;
+        private String toucHwType;
+        private bool bMutualTouchType;
+        private int iSelectedSlaveId;
+
+        private ProgressStatus progressStatus;
+
+        private Dictionary<int, TouchCommanderTabBase> devCfgViewDict;
+        private Dictionary<int, TouchCommanderTabBase> capCfgViewDict;
+        private Dictionary<int, TouchCommanderTabBase> tuningViewDict;
+
+        public TouchConfigTabPage(TouchCommanderController c) : base(c)
+        {
+            this.Text = "Touch Configuration";
+            this.bViewInitComplete = false;
+            this.iNumberOfSlaves = 0;
+            this.iSelectedSlaveId = 0;
+            devCfgViewDict = new Dictionary<int, TouchCommanderTabBase>();
+            capCfgViewDict = new Dictionary<int, TouchCommanderTabBase>();
+            tuningViewDict = new Dictionary<int, TouchCommanderTabBase>();
+        }
+
+        private void initView(object data)
+        {
+            cbSlaveIdSelect = new ComboBox();
+            cbSlaveIdSelect.Location = new Point(15, 15);
+            cbSlaveIdSelect.Size = new Size(180, 50);
+            cbSlaveIdSelect.Text = "Select the Slave Id";
+            cbSlaveIdSelect.Font = new Font(cbSlaveIdSelect.Font.Name, cbSlaveIdSelect.Font.Size + 2.0F, cbSlaveIdSelect.Font.Style, cbSlaveIdSelect.Font.Unit);
+            for (int i = 0; i < iNumberOfSlaves; i++)
+            {
+                cbSlaveIdSelect.Items.Add(String.Format("Slave {0}", i));
+            }
+
+            if (iNumberOfSlaves == 1)
+            {
+                cbSlaveIdSelect.Enabled = false;
+            }
+            cbSlaveIdSelect.SelectedIndex = 0;
+            iSelectedSlaveId = cbSlaveIdSelect.SelectedIndex;
+            cbSlaveIdSelect.SelectedIndexChanged += new System.EventHandler(cbSlaveIdSelect_SelectedIndexChanged);
+            this.Controls.Add(cbSlaveIdSelect);
+
+            cbTouchChipType = new ComboBox();
+            cbTouchChipType.Location = new Point(cbSlaveIdSelect.Location.X, cbSlaveIdSelect.Location.Y + cbSlaveIdSelect.Size.Height + 20);
+            cbTouchChipType.Size = new Size(180, 50);
+            cbTouchChipType.Text = "Select the Touch Micro";
+            cbTouchChipType.Font = new Font(cbTouchChipType.Font.Name, cbTouchChipType.Font.Size + 2.0F, cbTouchChipType.Font.Style, cbTouchChipType.Font.Unit);
+            foreach (string s in lstTouchChipTypes)
+            {
+                cbTouchChipType.Items.Add(s);
+            }
+            cbTouchChipType.SelectedIndexChanged += new System.EventHandler(cbTouchChipType_SelectedIndexChanged);
+            this.Controls.Add(cbTouchChipType);
+
+            cbTouchSeningMethod = new ComboBox();
+            //cbTouchSeningMethod.Location = new Point(cbTouchChipType.Location.X + cbTouchChipType.Size.Width + 30, 15);
+            cbTouchSeningMethod.Location = new Point(cbTouchChipType.Location.X, cbTouchChipType.Location.Y + cbTouchChipType.Size.Height + 20);
+            cbTouchSeningMethod.Size = new Size(180, 50);
+            cbTouchSeningMethod.Text = "Select Sensing Method";
+            cbTouchSeningMethod.Font = new Font(cbTouchSeningMethod.Font.Name, cbTouchSeningMethod.Font.Size + 2.0F, cbTouchSeningMethod.Font.Style, cbTouchSeningMethod.Font.Unit);
+            foreach (string s in lstTouchSeningMethods)
+            {
+                cbTouchSeningMethod.Items.Add(s);
+            }
+            cbTouchSeningMethod.Enabled = false;
+            cbTouchSeningMethod.SelectedIndexChanged += new System.EventHandler(cbTouchSeningMethod_SelectedIndexChanged);
+            this.Controls.Add(cbTouchSeningMethod);
+
+
+            btnLoadFromFile = new Button();
+            //btnLoadFromFile.Location = new Point(cbTouchSeningMethod.Location.X + cbTouchSeningMethod.Size.Width + 30, 15);
+            btnLoadFromFile.Location = new Point(cbTouchSeningMethod.Location.X, cbTouchSeningMethod.Location.Y + cbTouchSeningMethod.Size.Height + 20);
+            btnLoadFromFile.Size = new Size(180, 50);
+            btnLoadFromFile.Font = new Font(btnLoadFromFile.Font.Name, btnLoadFromFile.Font.Size + 2.0F, btnLoadFromFile.Font.Style, btnLoadFromFile.Font.Unit);
+            btnLoadFromFile.Text = "Load Config From File";
+            btnLoadFromFile.BackColor = Color.LightGreen;
+            btnLoadFromFile.Visible = true;
+            btnLoadFromFile.Click += new EventHandler(this.btnLoadFromFile_Click);
+            this.Controls.Add(btnLoadFromFile);
+
+            btnSaveToFile = new Button();
+            //btnSaveToFile.Location = new Point(btnLoadFromFile.Location.X + btnLoadFromFile.Size.Width + 30, 15);
+            btnSaveToFile.Location = new Point(btnLoadFromFile.Location.X, btnLoadFromFile.Location.Y + btnLoadFromFile.Size.Height + 20);
+            btnSaveToFile.Size = new Size(180, 50);
+            btnSaveToFile.Font = new Font(btnSaveToFile.Font.Name, btnSaveToFile.Font.Size + 2.0F, btnSaveToFile.Font.Style, btnSaveToFile.Font.Unit);
+            btnSaveToFile.Text = "Save Config To File";
+            btnSaveToFile.BackColor = Color.LightGreen;
+            btnSaveToFile.Visible = true;
+            btnSaveToFile.Click += new EventHandler(this.btnSaveToFile_Click);
+            this.Controls.Add(btnSaveToFile);
+
+            btnLoadFromDevice = new Button();
+            //btnLoadFromDevice.Location = new Point(btnSaveToFile.Location.X + btnSaveToFile.Size.Width + 30, 15);
+            btnLoadFromDevice.Location = new Point(btnSaveToFile.Location.X, btnSaveToFile.Location.Y + btnSaveToFile.Size.Height + 20);
+            btnLoadFromDevice.Size = new Size(180, 50);
+            btnLoadFromDevice.Font = new Font(btnLoadFromDevice.Font.Name, btnLoadFromDevice.Font.Size + 2.0F, btnLoadFromDevice.Font.Style, btnLoadFromDevice.Font.Unit);
+            btnLoadFromDevice.Text = "Read Config From Device";
+            btnLoadFromDevice.BackColor = Color.LightSeaGreen;
+            btnLoadFromDevice.Visible = true;
+            btnLoadFromDevice.Click += new EventHandler(this.btnLoadFromDevice_Click);
+            this.Controls.Add(btnLoadFromDevice);
+
+            btnWriteToDevice = new Button();
+            //btnWriteToDevice.Location = new Point(btnLoadFromDevice.Location.X + btnLoadFromDevice.Size.Width + 30, 15);
+            btnWriteToDevice.Location = new Point(btnLoadFromDevice.Location.X, btnLoadFromDevice.Location.Y + btnLoadFromDevice.Size.Height + 20);
+            btnWriteToDevice.Size = new Size(180, 50);
+            btnWriteToDevice.Font = new Font(btnWriteToDevice.Font.Name, btnWriteToDevice.Font.Size + 2.0F, btnWriteToDevice.Font.Style, btnWriteToDevice.Font.Unit);
+            btnWriteToDevice.Text = "Send Config To Device";
+            btnWriteToDevice.BackColor = Color.LightSeaGreen;
+            btnWriteToDevice.Visible = true;
+            btnWriteToDevice.Click += new EventHandler(this.btnWriteToDevice_Click);
+            this.Controls.Add(btnWriteToDevice);
+
+            btnReadFromDeviceFlash = new Button();
+            btnReadFromDeviceFlash.Location = new Point(btnWriteToDevice.Location.X, btnWriteToDevice.Location.Y + btnWriteToDevice.Size.Height + 20);
+            btnReadFromDeviceFlash.Size = new Size(180, 50);
+            btnReadFromDeviceFlash.Font = new Font(btnReadFromDeviceFlash.Font.Name, btnReadFromDeviceFlash.Font.Size + 2.0F, btnReadFromDeviceFlash.Font.Style, btnReadFromDeviceFlash.Font.Unit);
+            btnReadFromDeviceFlash.Text = "Read Config From Device Flash";
+            btnReadFromDeviceFlash.BackColor = Color.LightSalmon;
+            btnReadFromDeviceFlash.Visible = true;
+            btnReadFromDeviceFlash.Click += new EventHandler(this.btnReadFromDeviceFlash_Click);
+            this.Controls.Add(btnReadFromDeviceFlash);
+
+            btnWriteToDeviceFlash = new Button();
+            btnWriteToDeviceFlash.Location = new Point(btnReadFromDeviceFlash.Location.X, btnReadFromDeviceFlash.Location.Y + btnReadFromDeviceFlash.Size.Height + 20);
+            btnWriteToDeviceFlash.Size = new Size(180, 50);
+            btnWriteToDeviceFlash.Font = new Font(btnWriteToDeviceFlash.Font.Name, btnWriteToDeviceFlash.Font.Size + 2.0F, btnWriteToDeviceFlash.Font.Style, btnWriteToDeviceFlash.Font.Unit);
+            btnWriteToDeviceFlash.Text = "Write Config To Device Flash";
+            btnWriteToDeviceFlash.BackColor = Color.LightSalmon;
+            btnWriteToDeviceFlash.Visible = true;
+            btnWriteToDeviceFlash.Click += new EventHandler(this.btnWriteToDeviceFlash_Click);
+            this.Controls.Add(btnWriteToDeviceFlash);
+
+            btnClear = new Button();
+            //btnClear.Location = new Point(btnWriteToDevice.Location.X + btnWriteToDevice.Size.Width + 30, 15);
+            btnClear.Location = new Point(btnWriteToDeviceFlash.Location.X, btnWriteToDeviceFlash.Location.Y + btnWriteToDeviceFlash.Size.Height + 20);
+            btnClear.Size = new Size(180, 25);
+            btnClear.Font = new Font(btnClear.Font.Name, btnClear.Font.Size + 2.0F, btnClear.Font.Style, btnClear.Font.Unit);
+            btnClear.Text = "Clear";
+            btnClear.BackColor = Color.Khaki;
+            btnClear.Visible = true;
+            btnClear.Click += new EventHandler(this.btnClear_Click);
+            this.Controls.Add(btnClear);
+
+            btnSoftReset = new Button();
+            btnSoftReset.Location = new Point(btnClear.Location.X, btnClear.Location.Y + btnClear.Size.Height + 20);
+            btnSoftReset.Size = new Size(180, 25);
+            btnSoftReset.Font = new Font(btnSoftReset.Font.Name, btnSoftReset.Font.Size + 2.0F, btnSoftReset.Font.Style, btnSoftReset.Font.Unit);
+            btnSoftReset.Text = "Soft Reset";
+            btnSoftReset.BackColor = Color.Khaki;
+            btnSoftReset.Visible = true;
+            btnSoftReset.Click += new EventHandler(this.btnSoftReset_Click);
+            this.Controls.Add(btnSoftReset);
+
+            lbHeartBeatCnt = new Label();
+            lbHeartBeatCnt.Location = new Point(btnSoftReset.Location.X, btnSoftReset.Location.Y + btnSoftReset.Size.Height + 20);
+            lbHeartBeatCnt.Size = new Size(180, 25);
+            lbHeartBeatCnt.Font = new Font(lbHeartBeatCnt.Font.Name, lbHeartBeatCnt.Font.Size + 2.0F, lbHeartBeatCnt.Font.Style, lbHeartBeatCnt.Font.Unit);
+            lbHeartBeatCnt.Text = "HB Count: 0";
+            lbHeartBeatCnt.Visible = true;
+            this.Controls.Add(lbHeartBeatCnt);
+
+            btnFactoryDefault = new Button();
+            btnFactoryDefault.Location = new Point(lbHeartBeatCnt.Location.X, lbHeartBeatCnt.Location.Y + lbHeartBeatCnt.Size.Height + 20);
+            btnFactoryDefault.Size = new Size(180, 50);
+            btnFactoryDefault.Font = new Font(btnFactoryDefault.Font.Name, btnFactoryDefault.Font.Size + 2.0F, btnFactoryDefault.Font.Style, btnFactoryDefault.Font.Unit);
+            btnFactoryDefault.Text = "Restore Factory Default";
+            btnFactoryDefault.BackColor = Color.Khaki;
+            btnFactoryDefault.Visible = true;
+            btnFactoryDefault.Click += new EventHandler(this.btnFactoryDefault_Click);
+            this.Controls.Add(btnFactoryDefault);
+
+            tcConfigTabs = new TabControl();
+            tcConfigTabs.Location = new Point(cbSlaveIdSelect.Location.X + cbSlaveIdSelect.Size.Width + 10, cbSlaveIdSelect.Location.Y - 10);
+            tcConfigTabs.Size = new Size(this.Width - 220, this.Height - 8);
+            tcConfigTabs.Selected += new TabControlEventHandler(this.tcConfigTabs_Selected);
+            this.Controls.Add(tcConfigTabs);
+
+            if (control.IsOfflineModeActive() == true)
+            {
+                btnLoadFromDevice.Enabled = false;
+                btnWriteToDevice.Enabled = false;
+                btnWriteToDeviceFlash.Enabled = false;
+                btnReadFromDeviceFlash.Enabled = false;
+                btnSoftReset.Enabled = false;
+            }
+
+            this.bViewInitComplete = true;
+            this.progressStatus = new ProgressStatus(100, "Progress Status");
+        }
+
+        private void cbSlaveIdSelect_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            iSelectedSlaveId = cbSlaveIdSelect.SelectedIndex;
+        }
+
+        private void cbTouchChipType_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            ComboBox device_type = (ComboBox)sender;
+            cbTouchSeningMethod.Enabled = true;
+            control.SetActualDeviceType((byte)iSelectedSlaveId, device_type.Text);
+        }
+
+        private void tcConfigTabs_Selected(Object sender, TabControlEventArgs e)
+        {
+            if (e.TabPage == null) return;
+
+            Console.WriteLine(String.Format("[{0}] = [{1}] [{2}] [{3}]", "TabPage", e.TabPage, e.Action, e.TabPage.Text));
+            if (e.TabPage.Text.Contains("RX130 Button Configuration"))
+            {
+                RX130TouchCapConfigTabPage cap_tab = (RX130TouchCapConfigTabPage)e.TabPage;
+                cap_tab.enableSelectedkeys();
+            }
+        }
+
+        private void cbTouchSeningMethod_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            bMutualTouchType = cbTouchSeningMethod.Text == "Mutual" ? true : false;
+            cbTouchChipType.Enabled = false;
+
+            for (int i = 0; i < iNumberOfSlaves; i++)
+            {
+                if (cbTouchChipType.Text == "RX130")
+                {
+                    if (devCfgViewDict.ContainsKey(i) == false)
+                    {
+                        RX130TouchDevConfigTabPage dev_tab = new RX130TouchDevConfigTabPage(control, i, bMutualTouchType);
+                        devCfgViewDict.Add(i, dev_tab);
+                        tcConfigTabs.Controls.Add(dev_tab);
+                    }
+                    //                    tcConfigTabs.Controls.Remove(devCfgViewDict[i]);
+                    //                    devCfgViewDict.Remove(i);
+
+
+                    if (capCfgViewDict.ContainsKey(i) == false)
+                    {
+                        RX130TouchCapConfigTabPage cap_tab = new RX130TouchCapConfigTabPage(control, i);
+                        capCfgViewDict.Add(i, cap_tab);
+                        tcConfigTabs.Controls.Add(cap_tab);
+                    }
+                    //                    tcConfigTabs.Controls.Remove(capCfgViewDict[i]);
+                    //                    capCfgViewDict.Remove(i);
+
+                    //                    if (tuningViewDict.ContainsKey(i) == false)
+                    //                    {
+                    //                        RX130TouchTuningTabPage tuning_tab = new RX130TouchTuningTabPage(control, i);
+                    //                        tuningViewDict.Add(i, tuning_tab);
+                    //                        tcConfigTabs.Controls.Add(tuning_tab);
+                    //                    }
+
+                    TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+                    model.createConfigModel((byte)i, cbTouchChipType.Text, cbTouchSeningMethod.Text);
+                }
+                else if (cbTouchChipType.SelectedText == "PSoC4000")
+                {
+                }
+                else
+                {
+                }
+            }
+        }
+
+        private byte[] StringToByteArray(string hex)
+        {
+            return Enumerable.Range(0, hex.Length)
+                             .Where(x => x % 2 == 0)
+                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                             .ToArray();
+        }
+
+        private String ByteArrayToString(byte[] data, int bytes_per_line)
+        {
+            String s = "";
+            int length = data.Length;
+            int num_rows = length / bytes_per_line;
+
+            for (int i = 0; i < num_rows; i++)
+            {
+                s += BitConverter.ToString(data, i * bytes_per_line, bytes_per_line).Replace("-", "");
+                s += System.Environment.NewLine;
+            }
+
+            return s;
+        }
+
+        private void btnLoadFromFile_Click(object sender, System.EventArgs e)
+        {
+            if (cbTouchChipType.Text == "RX130")
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Filter = "txt files (*.txt)|*.txt|HEX Files (*.hex)|*.hex|All files (*.*)|*.*";
+                openFileDialog.FilterIndex = 2;
+                openFileDialog.Multiselect = false;
+                DialogResult result = openFileDialog.ShowDialog(); // Show the dialog.
+                if (result != DialogResult.OK)
+                {
+                    return;
+                }
+
+                string file = openFileDialog.FileName;
+                string config_text = String.Empty;
+
+                using (StreamReader sr = File.OpenText(file))
+                {
+                    string s = String.Empty;
+                    while ((s = sr.ReadLine()) != null)
+                    {
+                        config_text = config_text + s;
+                    }
+                }
+
+                byte[] config_data = StringToByteArray(config_text);
+
+                TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+                if (model != null)
+                {
+                    int cfg_data_length = config_text.Length / 2;
+                    byte[] data = new byte[5 + cfg_data_length];
+                    data[0] = (byte)iSelectedSlaveId;
+                    data[1] = 0x00; //offset MSB
+                    data[2] = 0x00; //offset LSB
+                    data[3] = (byte)((cfg_data_length >> 8) & 0xFF); //length MSB
+                    data[4] = (byte)(cfg_data_length & 0xFF); //length MSB
+                    System.Buffer.BlockCopy(config_data, 0, data, 5, cfg_data_length);
+                    model.updateModel(data, "full");
+                    this.devCfgViewDict[iSelectedSlaveId].updateView(String.Format("{0}", data[0]), (object)model);
+                    this.capCfgViewDict[iSelectedSlaveId].updateView(String.Format("{0}", data[0]), (object)model);
+                }
+            }
+        }
+
+        private void btnSaveToFile_Click(object sender, System.EventArgs e)
+        {
+            if (cbTouchChipType.Text == "RX130")
+            {
+                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+                saveFileDialog1.Filter = "Hex Format|*.hex";
+                saveFileDialog1.RestoreDirectory = true;
+                saveFileDialog1.CheckPathExists = true;
+                saveFileDialog1.DefaultExt = "hex";
+                DialogResult result = saveFileDialog1.ShowDialog(); // Show the dialog.
+                saveFileDialog1.Title = "Save Touch Config File";
+                if (result != DialogResult.OK) // Test result.
+                {
+                    return;
+                }
+
+                TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+                if (model != null)
+                {
+                    byte[] dev_cfg;
+                    byte[] cap_cfg;
+                    int dev_cfg_size = model.getDevConfigSize(iSelectedSlaveId);
+                    int cap_cfg_size = model.getCapConfigSize(iSelectedSlaveId);
+                    int total_cfg_size = dev_cfg_size + cap_cfg_size;
+
+                    if (cbTouchChipType.Text == "RX130")
+                    {
+                        RX130TouchDevConfigTabPage dev_cfg_tab = (RX130TouchDevConfigTabPage)this.devCfgViewDict[iSelectedSlaveId];
+                        dev_cfg = dev_cfg_tab.getDevConfigData(iSelectedSlaveId);
+                        byte[] dev_cfg_data = new byte[dev_cfg.Length + 5];
+                        dev_cfg_data[0] = (byte)iSelectedSlaveId;
+                        dev_cfg_data[1] = 0x00; //offset MSB
+                        dev_cfg_data[2] = 0x00; //offset LSB
+                        dev_cfg_data[3] = (byte)((dev_cfg.Length >> 8) & 0xFF); //length MSB
+                        dev_cfg_data[4] = (byte)(dev_cfg.Length & 0xFF); //length MSB
+                        System.Buffer.BlockCopy(dev_cfg, 0, dev_cfg_data, 5, dev_cfg.Length);
+                        model.updateModel(dev_cfg_data, "dev_cfg");
+
+                        RX130TouchCapConfigTabPage cap_cfg_tab = (RX130TouchCapConfigTabPage)this.capCfgViewDict[iSelectedSlaveId];
+                        cap_cfg = cap_cfg_tab.getCapConfigData(iSelectedSlaveId);
+                        byte[] cap_cfg_data = new byte[cap_cfg.Length + 5];
+                        cap_cfg_data[0] = (byte)iSelectedSlaveId;
+                        cap_cfg_data[1] = 0x00; //offset MSB
+                        cap_cfg_data[2] = 0x00; //offset LSB
+                        cap_cfg_data[3] = (byte)((cap_cfg.Length >> 8) & 0xFF); //length MSB
+                        cap_cfg_data[4] = (byte)(cap_cfg.Length & 0xFF); //length MSB
+                        System.Buffer.BlockCopy(cap_cfg, 0, cap_cfg_data, 5, cap_cfg.Length);
+                        model.updateModel(cap_cfg_data, "cap_cfg");
+
+                        byte[] data = new byte[dev_cfg_size + cap_cfg_size];
+
+                        System.Buffer.BlockCopy(model.getDevConfigData(iSelectedSlaveId), 0, data, 0, dev_cfg_size);
+                        System.Buffer.BlockCopy(model.getCapConfigData(iSelectedSlaveId), 0, data, dev_cfg_size, cap_cfg_size);
+
+                        String cfg_str = ByteArrayToString(data, 128);
+                        //String cfg_str = ByteArrayToString(dev_cfg, 128);
+                        //cfg_str += ByteArrayToString(cap_cfg, 128);
+
+                        if (saveFileDialog1.FileName != "")
+                        {
+                            File.WriteAllText(saveFileDialog1.FileName, cfg_str);
+                        }
+                        else
+                        {
+                            MessageBox.Show("The File name was empty !!!");
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void btnLoadFromDevice_Click(object sender, System.EventArgs e)
+        {
+            if (cbTouchChipType.Text == "RX130")
+            {
+
+                TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+                UInt16 dev_cfg_start_offset = model.getDevCfgStartOffset(iSelectedSlaveId);
+                UInt16 dev_cfg_data_size = (UInt16)model.getDevConfigDataSize(iSelectedSlaveId);
+
+                UInt16 cap_cfg_start_offset = model.getCapCfgStartOffset(iSelectedSlaveId);
+                UInt16 cap_cfg_data_size = (UInt16)model.getCapConfigDataSize(iSelectedSlaveId);
+
+                UInt16 dev_cfg_crc_offset = model.getDevCfgCRCOffset(iSelectedSlaveId);
+                UInt16 cap_cfg_crc_offset = model.getCapCfgCRCOffset(iSelectedSlaveId);
+
+                byte block_size = 32;
+                UInt16 bytes_sent = 0;
+
+                //sendPauseKeyScanningCmd();
+
+                while (bytes_sent < cap_cfg_data_size)
+                {
+                    control.SendI2CReadCommand("Touch Config", "i2c_cap_cfg", (byte)iSelectedSlaveId, "Secondary", (UInt16)(cap_cfg_start_offset + bytes_sent), block_size);
+                    bytes_sent += block_size;
+
+                    if ((bytes_sent != cap_cfg_data_size) && ((bytes_sent + block_size) > cap_cfg_data_size))
+                    {
+                        UInt16 bytes_to_send = (UInt16)(cap_cfg_data_size - bytes_sent);
+                        control.SendI2CReadCommand("Touch Config", "i2c_cap_cfg", (byte)iSelectedSlaveId, "Secondary", (UInt16)(cap_cfg_start_offset + bytes_sent), (byte)bytes_to_send);
+                        break;
+                    }
+                }
+
+                bytes_sent = 0;
+                while (bytes_sent < dev_cfg_data_size)
+                {
+                    control.SendI2CReadCommand("Touch Config", "i2c_dev_cfg", (byte)iSelectedSlaveId, "Secondary", (UInt16)(dev_cfg_start_offset + bytes_sent), block_size);
+
+                    bytes_sent += block_size;
+                    if ((bytes_sent != dev_cfg_data_size) && ((bytes_sent + block_size) > dev_cfg_data_size))
+                    {
+                        UInt16 bytes_to_send = (UInt16)(dev_cfg_data_size - bytes_sent);
+                        control.SendI2CReadCommand("Touch Config", "i2c_dev_cfg", (byte)iSelectedSlaveId, "Secondary", (UInt16)(dev_cfg_start_offset + bytes_sent), (byte)bytes_to_send);
+                        break;
+                    }
+                }
+
+
+                control.SendI2CReadCommand("Touch Config", "i2c_read_crc", (byte)iSelectedSlaveId, "Secondary", model.getDevCfgCRCOffset(iSelectedSlaveId), 4);
+
+                //sendResumeKeyScanningCmd();
+            }
+        }
+
+        private void updateModelFromView()
+        {
+            byte[] dev_cfg;
+            byte[] cap_cfg;
+            TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+
+            RX130TouchDevConfigTabPage dev_cfg_tab = (RX130TouchDevConfigTabPage)this.devCfgViewDict[iSelectedSlaveId];
+            dev_cfg = dev_cfg_tab.getDevConfigData(iSelectedSlaveId);
+            byte[] dev_cfg_data = new byte[dev_cfg.Length + 5];
+            dev_cfg_data[0] = (byte)iSelectedSlaveId;
+            dev_cfg_data[1] = 0x00; //offset MSB
+            dev_cfg_data[2] = 0x00; //offset LSB
+            dev_cfg_data[3] = (byte)((dev_cfg.Length >> 8) & 0xFF); //length MSB
+            dev_cfg_data[4] = (byte)(dev_cfg.Length & 0xFF); //length MSB
+            System.Buffer.BlockCopy(dev_cfg, 0, dev_cfg_data, 5, dev_cfg.Length);
+            model.updateModel(dev_cfg_data, "dev_cfg");
+
+            RX130TouchCapConfigTabPage cap_cfg_tab = (RX130TouchCapConfigTabPage)this.capCfgViewDict[iSelectedSlaveId];
+            cap_cfg = cap_cfg_tab.getCapConfigData(iSelectedSlaveId);
+            byte[] cap_cfg_data = new byte[cap_cfg.Length + 5];
+            cap_cfg_data[0] = (byte)iSelectedSlaveId;
+            cap_cfg_data[1] = 0x00; //offset MSB
+            cap_cfg_data[2] = 0x00; //offset LSB
+            cap_cfg_data[3] = (byte)((cap_cfg.Length >> 8) & 0xFF); //length MSB
+            cap_cfg_data[4] = (byte)(cap_cfg.Length & 0xFF); //length MSB
+            System.Buffer.BlockCopy(cap_cfg, 0, cap_cfg_data, 5, cap_cfg.Length);
+            model.updateModel(cap_cfg_data, "cap_cfg");
+        }
+
+        private void btnWriteToDevice_Click(object sender, System.EventArgs e)
+        {
+            if (cbTouchChipType.Text == "RX130")
+            {
+                TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+
+                UInt16 dev_cfg_start_offset = model.getDevCfgStartOffset(iSelectedSlaveId);
+                UInt16 cap_cfg_start_offset = model.getCapCfgStartOffset(iSelectedSlaveId);
+                int dev_cfg_data_size = model.getDevConfigDataSize(iSelectedSlaveId);
+                int cap_cfg_data_size = model.getCapConfigDataSize(iSelectedSlaveId);
+                UInt16 bytes_sent = 0;
+                byte block_size = 32;
+                byte[] data_block = new byte[block_size];
+                byte[] crc_bytes = new byte[2];
+
+                updateModelFromView();
+
+                sendPauseKeyScanningCmd();
+
+                bytes_sent = 0;
+                byte[] cap_cfg_data = model.getCapConfigData(iSelectedSlaveId);
+                while (bytes_sent < cap_cfg_data_size)
+                {
+                    System.Buffer.BlockCopy(cap_cfg_data, bytes_sent, data_block, 0, block_size);
+                    control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", (UInt16)(cap_cfg_start_offset + bytes_sent), data_block);
+                    bytes_sent += block_size;
+
+                    if ((bytes_sent != cap_cfg_data_size) && ((bytes_sent + block_size) > cap_cfg_data_size))
+                    {
+                        UInt16 bytes_to_send = (UInt16)(cap_cfg_data_size - bytes_sent);
+                        byte[] remaining_data_block = new byte[bytes_to_send];
+                        System.Buffer.BlockCopy(cap_cfg_data, bytes_sent, remaining_data_block, 0, bytes_to_send);
+                        control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", (UInt16)(cap_cfg_start_offset + bytes_sent), remaining_data_block);
+                        break;
+                    }
+                }
+                crc_bytes[0] = cap_cfg_data[cap_cfg_data_size];
+                crc_bytes[1] = cap_cfg_data[cap_cfg_data_size + 1];
+                control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", model.getCapCfgCRCOffset(iSelectedSlaveId), crc_bytes);
+
+                bytes_sent = 0;
+                byte[] dev_cfg_data = model.getDevConfigData(iSelectedSlaveId);
+                while (bytes_sent < dev_cfg_data_size)
+                {
+                    System.Buffer.BlockCopy(dev_cfg_data, bytes_sent, data_block, 0, block_size);
+                    control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", (UInt16)(dev_cfg_start_offset + bytes_sent), data_block);
+                    bytes_sent += block_size;
+
+                    if ((bytes_sent != dev_cfg_data_size) && ((bytes_sent + block_size) > dev_cfg_data_size))
+                    {
+                        UInt16 bytes_to_send = (UInt16)(dev_cfg_data_size - bytes_sent);
+                        byte[] remaining_data_block = new byte[bytes_to_send];
+                        System.Buffer.BlockCopy(dev_cfg_data, bytes_sent, remaining_data_block, 0, bytes_to_send);
+                        control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", (UInt16)(dev_cfg_start_offset + bytes_sent), remaining_data_block);
+                        break;
+                    }
+                }
+                crc_bytes[0] = dev_cfg_data[dev_cfg_data_size];
+                crc_bytes[1] = dev_cfg_data[dev_cfg_data_size + 1];
+                control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", model.getDevCfgCRCOffset(iSelectedSlaveId), crc_bytes);
+
+                sendResumeKeyScanningCmd();
+            }
+        }
+
+        private void btnReadFromDeviceFlash_Click(object sender, System.EventArgs e)
+        {
+            if (cbTouchChipType.Text == "RX130")
+            {
+                //sendPauseKeyScanningCmd();
+                control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x05, 0xF5); // Load device config to RAM
+                control.SendDelayCommand(2000);
+                control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x06, 0xA6); // Load capsense config to RAM
+                control.SendDelayCommand(2000);
+                //sendResumeKeyScanningCmd();
+                showProgress(0, "Loading configuration data to RAM");
+            }
+        }
+
+        private void btnWriteToDeviceFlash_Click(object sender, System.EventArgs e)
+        {
+            if (cbTouchChipType.Text == "RX130")
+            {
+                TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+                updateModelFromView();
+                //sendPauseKeyScanningCmd();
+                control.SendI2CReadCommand("Touch Config", "validate_crc", (byte)iSelectedSlaveId, "Secondary", model.getDevCfgCRCOffset(iSelectedSlaveId), 4);
+                //sendResumeKeyScanningCmd();
+            }
+        }
+
+
+        private void btnClear_Click(object sender, System.EventArgs e)
+        {
+            devCfgViewDict.Clear();
+            capCfgViewDict.Clear();
+            tuningViewDict.Clear();
+            tcConfigTabs.Controls.Clear();
+
+            TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+            model.clearConfigModel();
+
+            cbTouchChipType.Enabled = true;
+            cbTouchChipType.Text = "Select the Touch Micro";
+
+            cbTouchSeningMethod.Enabled = false;
+            cbTouchSeningMethod.Text = "Select Sensing Method";
+        }
+
+        private void btnSoftReset_Click(object sender, System.EventArgs e)
+        {
+            control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x0B, 0xEA); // Soft Reset Command
+        }
+
+        private void btnFactoryDefault_Click(object sender, System.EventArgs e)
+        {
+            sendPauseKeyScanningCmd();
+            control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x22, 0xe4); // Factory Reset Command
+            control.SendDelayCommand(2000);
+            sendResumeKeyScanningCmd();
+        }
+
+        public void sendPauseKeyScanningCmd()
+        {
+            control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x0E, 0x1F); // Pause key scanning
+            control.SendDelayCommand(1000);
+        }
+
+        public void sendResumeKeyScanningCmd()
+        {
+            control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x0F, 0x2E); // Resume key scanning
+            control.SendDelayCommand(500);
+        }
+
+        public void sendUpdateKeyDataCmd(byte keyid)
+        {
+            updateModelFromView();
+
+            byte[] crc_bytes = new byte[2];
+            TouchConfigModel model = (TouchConfigModel)control.GetModel("Touch Config");
+
+            int cap_cfg_data_size = model.getCapConfigDataSize(iSelectedSlaveId);
+            UInt16 cap_cfg_start_offset = model.getCapCfgStartOffset(iSelectedSlaveId);
+            byte[] cap_cfg_data = model.getCapConfigData(iSelectedSlaveId);
+            UInt16 offset_addr = (UInt16)(cap_cfg_start_offset + 16 + (15 * keyid));
+
+            byte[] key_cfg_data = new byte[15];
+            System.Buffer.BlockCopy(cap_cfg_data, 16 + (15 * keyid), key_cfg_data, 0, 15);
+            control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", offset_addr, key_cfg_data);
+
+            crc_bytes[0] = cap_cfg_data[cap_cfg_data_size];
+            crc_bytes[1] = cap_cfg_data[cap_cfg_data_size + 1];
+            control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Secondary", model.getCapCfgCRCOffset(iSelectedSlaveId), crc_bytes);
+        }
+
+        public void sendRequestCounterDataCmd(byte keyid)
+        {
+            byte[] data = new byte[2];
+            data[0] = 0x00;
+            data[1] = keyid;
+            control.SendI2CWriteCommand("Touch Config", (byte)iSelectedSlaveId, "Primary", 0x00EA, data);
+            control.SendDelayCommand(100);
+        }
+
+        public void sendReadCounterDataCmd()
+        {
+            control.SendI2CReadCommand("Touch Config", "tuning_data", (byte)iSelectedSlaveId, "Primary", 0x00EA, 21);
+        }
+
+        public void sendClearQueue()
+        {
+            control.ClearCommandQueue();
+        }
+
+        public override void updateView(Object data)
+        {
+            if (data == null) return;
+
+            TouchConfigModel model = (TouchConfigModel)data;
+            if (bViewInitComplete == false)
+            {
+                if (control.IsOfflineModeActive() == true)
+                {
+                    this.iNumberOfSlaves = 1;
+                }
+                else
+                {
+                    this.iNumberOfSlaves = control.GetNumberOfSlaves();
+                }
+                this.initView(data);
+            }
+            else
+            {
+                if (cbTouchChipType.Text == "RX130")
+                {
+                    byte[] pkt = (byte[])data;
+                    Console.WriteLine("{0}", pkt.Length);
+                }
+            }
+        }
+
+        public override void updateView(string section, Object data)
+        {
+            TouchConfigModel model = (TouchConfigModel)data;
+
+            if (cbTouchChipType == null) return;
+
+            if (cbTouchChipType.Text == "RX130")
+            {
+                if (section == "i2c_dev_cfg")
+                {
+                    this.devCfgViewDict[iSelectedSlaveId].updateView(String.Format("{0}", (byte)iSelectedSlaveId), (object)model);
+                    this.progressStatus.updateStatus(100, "Reading Device Config ... Done");
+                    this.progressStatus.Close();
+                }
+                else if (section == "i2c_cap_cfg")
+                {
+                    this.capCfgViewDict[iSelectedSlaveId].updateView(String.Format("{0}", (byte)iSelectedSlaveId), (object)model);
+                    this.progressStatus.updateStatus(50, "Reading Capsense Config ... Done");
+                }
+            }
+
+            if (section == "hmi_connected")
+            {
+                btnLoadFromDevice.Enabled = true;
+                btnWriteToDevice.Enabled = true;
+                btnWriteToDeviceFlash.Enabled = true;
+                btnReadFromDeviceFlash.Enabled = true;
+                btnSoftReset.Enabled = true;
+            }
+            else if (section == "hmi_disconnected")
+            {
+                btnLoadFromDevice.Enabled = false;
+                btnWriteToDevice.Enabled = false;
+                btnWriteToDeviceFlash.Enabled = false;
+                btnReadFromDeviceFlash.Enabled = false;
+                btnSoftReset.Enabled = false;
+            }
+            else if (section == "validate_crc")
+            {
+                if ((model.getDevCfgCRC(iSelectedSlaveId) != model.getDevCfgDeviceCRC(iSelectedSlaveId)) ||
+                    (model.getCapCfgCRC(iSelectedSlaveId) != model.getCapCfgDeviceCRC(iSelectedSlaveId)))
+                {
+                    MessageBox.Show("ERROR: CRC Mismatch\nConfig CRC read back from device does not match with loaded config data\nSending the Save to Flash command anyway !!!");
+                }
+                sendPauseKeyScanningCmd();
+                control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x01, 0x31); // Write device config to Flash
+                control.SendDelayCommand(2000);
+                control.SendI2CCommand("Touch Config", (byte)iSelectedSlaveId, 0x02, 0x62); // Write capsense config to Flash
+                control.SendDelayCommand(2000);
+                sendResumeKeyScanningCmd();
+            }
+            else if (section == "i2c_read_crc")
+            {
+                if ((model.getDevCfgCRC(iSelectedSlaveId) != model.getDevCfgDeviceCRC(iSelectedSlaveId)) ||
+                    (model.getCapCfgCRC(iSelectedSlaveId) != model.getCapCfgDeviceCRC(iSelectedSlaveId)))
+                {
+                    MessageBox.Show(String.Format("ERROR: CRC Mismatch\nDev CRC Calculated: 0x{0:X4}\nDev CRC Read from Device: 0x{1:X4}\nCap CRC Calculated: 0x{2:X4}\nCap CRC Read from Device: 0x{3:X4}\n",
+                                    model.getDevCfgCRC(iSelectedSlaveId), model.getDevCfgDeviceCRC(iSelectedSlaveId),
+                                    model.getCapCfgCRC(iSelectedSlaveId), model.getCapCfgDeviceCRC(iSelectedSlaveId)));
+                }
+            }
+            else if (section == "tuning_data")
+            {
+                String tuning_section_data = String.Format("tuning_data,{0}", iSelectedSlaveId);
+                if (this.capCfgViewDict.ContainsKey(iSelectedSlaveId) == true)
+                {
+                    this.capCfgViewDict[iSelectedSlaveId].updateView(tuning_section_data, (object)model);
+                }
+            }
+            else if (section == "Heart Beat")
+            {
+                lbHeartBeatCnt.Text = String.Format("HB Count: {0}", model.getHearBeatCounter((byte)iSelectedSlaveId));
+            }
+        }
+
+        public TouchCommanderTabBase getDevCfgViewForSlave(int slave_id)
+        {
+            return (TouchCommanderTabBase)devCfgViewDict[slave_id];
+        }
+
+        public TouchCommanderTabBase getCapCfgViewForSlave(int slave_id)
+        {
+            return (TouchCommanderTabBase)capCfgViewDict[slave_id];
+        }
+
+        public void showProgress(int progress, string text)
+        {
+            progressStatus.ShowDialog();
+            progressStatus.updateStatus(progress, text);
+        }
+    }
+
+    public partial class ProgressStatus : Form
+    {
+        private ProgressBar pbStatus;
+
+        public ProgressStatus(int maxValue, string textToDisplay)
+        {
+            this.Location = new Point(400, 400);
+            this.Size = new Size(600, 230);
+            this.Font = new Font(this.Font.Name, this.Font.Size + 2.0F, this.Font.Style, this.Font.Unit);
+            this.Text = textToDisplay;
+
+            pbStatus = new ProgressBar();
+            pbStatus.Maximum = maxValue;
+            pbStatus.Location = new Point(30, 80);
+            pbStatus.Size = new Size(520, 30);
+            pbStatus.Font = new Font(pbStatus.Font.Name, pbStatus.Font.Size + 2.0F, pbStatus.Font.Style, pbStatus.Font.Unit);
+
+            this.Controls.Add(pbStatus);
+        }
+
+        public void updateStatus(int progress, string updatedTextToDisplay)
+        {
+            pbStatus.Value = progress;
+            pbStatus.Text = updatedTextToDisplay;
+        }
+    }
+}

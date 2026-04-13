@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RqmLink</name>
+    </assembly>
+    <members>
+        <member name="T:RqmLink.IRqmTest">
+            <summary>
+            Interface to a Rqm test
+            </summary>
+        </member>
+        <member name="M:RqmLink.IRqmTest.RunTest(System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Runs the test.
+            </summary>
+            <param name="testName">Name of the test.</param>
+            <param name="testVariables">The test variables.</param>
+            <returns></returns>
+        </member>
+        <member name="P:RqmLink.IRqmTest.ContainerName">
+            <summary>
+            Gets the name of the container.
+            </summary>
+            <value>
+            The name of the container.
+            </value>
+        </member>
+        <member name="T:RqmLink.IRqmTestService">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:RqmLink.IRqmTestService.Ping">
+            <summary>
+            Pings this instance.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RqmLink.IRqmTestService.RunTest(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Runs the test.
+            </summary>
+            <param name="testContainer">The test container.</param>
+            <param name="testName">Name of the test.</param>
+            <param name="testVariables">The test variables.</param>
+            <returns></returns>
+        </member>
+        <member name="T:RqmLink.RqmTestResult">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.PASSED">
+            <summary>
+            The passed
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.FAILED">
+            <summary>
+            The failed
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.ERROR">
+            <summary>
+            The error
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.INCOMPLETE">
+            <summary>
+            The incomplete
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.INCONCLUSIVE">
+            <summary>
+            The inconclusive
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.BLOCKED">
+            <summary>
+            The blocked
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.PARTIALLY_BLOCKED">
+            <summary>
+            The partiall y_ blocked
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.PERMANENTLY_FAILED">
+            <summary>
+            The permanentl y_ failed
+            </summary>
+        </member>
+        <member name="F:RqmLink.RqmTestResult.DEFERRED">
+            <summary>
+            The deferred
+            </summary>
+        </member>
+        <member name="T:RqmLink.RqmTestResults">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:RqmLink.RqmTestResults.TestReport">
+            <summary>
+            Gets or sets the test report.
+            </summary>
+            <value>
+            The test report.
+            </value>
+        </member>
+        <member name="P:RqmLink.RqmTestResults.TestError">
+            <summary>
+            Gets or sets the test error.
+            </summary>
+            <value>
+            The test error.
+            </value>
+        </member>
+        <member name="P:RqmLink.RqmTestResults.TestResult">
+            <summary>
+            Gets or sets the test result.
+            </summary>
+            <value>
+            The test result.
+            </value>
+        </member>
+        <member name="P:RqmLink.RqmTestResults.ExitResult">
+            <summary>
+            Getsor sets the exit result.
+            </summary>
+            <value>
+            The exit result.
+            </value>
+        </member>
+    </members>
+</doc>

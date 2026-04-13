@@ -1,0 +1,1480 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>WideBoxLib</name>
+    </assembly>
+    <members>
+        <member name="T:WideBoxLib.BitField">
+            <summary>
+            Class that can Hold a Bit Field and convert to byte or byte array
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.BitField.AddByte(System.Byte)">
+            <summary>
+            Add a entire byte in the bit field
+            </summary>
+            <param name="value">Byte to be added</param>
+        </member>
+        <member name="M:WideBoxLib.BitField.AddByte(System.Byte,System.Int32)">
+            <summary>
+            Insert or change the value of bit on Byte size (8)
+            If the previous positions are not set before they are set as false
+            i.e. set the 2 position before add the first position
+            </summary>
+            <param name="value">Byte value to be set</param>
+            <param name="byte_index">Position of the byte starting in 0</param>
+        </member>
+        <member name="P:WideBoxLib.BitField.Item(System.Int32,System.Int32)">
+            <summary>
+            Return the value of given byte and bit
+            </summary>
+            <param name="byte_index">Byte to get the bit value</param>
+            <param name="bit">bit from the byte to get the value</param>
+            <returns>true if the bit is set or false otherwise</returns>
+        </member>
+        <member name="M:WideBoxLib.BitField.toByte">
+            <summary>
+            Return the first byte value
+            </summary>
+            <returns>value of the first byte</returns>
+        </member>
+        <member name="M:WideBoxLib.BitField.toByte(System.Int32)">
+            <summary>
+            Return the given byte value
+            If the byte is not completed by the bits the value on the remaining bits will be false
+            If the byte is not filled yet
+            </summary>
+            <param name="start_byte">Byte to get the value</param>
+            <returns>Value of the byte</returns>
+            <throw>IndexOutOfRangeException when the given byte is out of range</throw>
+        </member>
+        <member name="M:WideBoxLib.BitField.toByteArray">
+            <summary>
+            Get all the bytes filled
+            </summary>
+            <returns>array of the value of the bytes that was filled</returns>
+        </member>
+        <member name="T:WideBoxLib.WideBoxConstants">
+            <summary>
+            List of constants to help user to send commands and additional info
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_SNIFFER_ON">
+            <summary>
+            Set wide box to sniffer type
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_WIDE_BOX_ADDR">
+            <summary>
+            Set the wide box address
+            Data[0]: WideBox address
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_NODE_LIST">
+            <summary>
+            Set the node list on the wide box
+            <para>
+            Data[0..n]: nodes to the list
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_SIMPLE_NODE">
+            <summary>
+            Set wide box to simple node type
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_EXTERNAL_NODE">
+            <summary>
+            Set wide box to external node type
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_POOL_LIST">
+            <summary>
+            Set the arbiter pooling list on the wide box
+            Note: When set the widebox will be set to arbiter node automatically
+            Data[0]: n - number of nodes
+            Data[1..n]: nodes to the list
+            Deprecated use CMD_SET_POLL_LIST instead
+            Will not be removed to maintain compatibility with old interfaces
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_POLL_LIST">
+            <summary>
+            Set the arbiter pooling list on the wide box
+            Note: When set the widebox will be set to arbiter node automatically
+            <para>
+            Data[0..n]: nodes to the list
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_ARBITER_MODE">
+            <summary>
+            Set wide box to arbiter node type
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_SERVICE_NODE">
+            <summary>
+            Set wide box to service node type
+            Note: When set the widebox address will change to 7
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_DATA_ON">
+            <summary>
+            Set Data ON at the widebox
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_DATA_OFF">
+            <summary>
+            Set Data OFF at the widebox
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_FILTER_ON">
+            <summary>
+            Set Filter ON at the widebox
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_FILTER_OFF">
+            <summary>
+            Set Filter OFF at the widebox
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_WIDE_BOX_ADDR">
+            <summary>
+            Get the WideBox SW revision
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_POLL_LIST">
+            <summary>
+            Get the WideBox poll list
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_NODE_LIST">
+            <summary>
+            Get the WideBox node list
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_NODE_MODE">
+            <summary>
+            Get the WideBox configuration
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_RESET_DEVICE">
+            <summary>
+            Reset the Device
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_REVISION">
+            <summary>
+            Get the WideBox SW revision
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_DFU_MODE">
+            <summary>
+            Special command to send the WideBox to Device Firmware Upgrade mode
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_WAKE_UP_SIGNAL">
+            <summary>
+            Special command to send a wake up signal in the Whirlpool BUS (not available in SmartCable/CCB1)
+            Data null
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_PROTOCOL">
+            <summary>
+            Only Available in CCB2 (PPW and CCB2 protocol)
+            <para>
+            Set protocol to communicate with CCB2. This is always a blocking execution with 1 second timeout!
+            <para>Data[0] 0: CCB2Protocol 1: PPW</para>
+            It will send Set PPW command over CCB2Protocol and Set CCB2Protocol command over PPW
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_CONFIGURATION">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Set device bus configuration
+            Data[0] 0: None, 1: Wide, 2: Win, 3: WMSP
+            Data[1] Device Address
+            Data[2] Node Action 1: Sniffer (WIDE) 2: Simple Node (WIDE) / Slave (WMSP) 3: Arbiter (WIDE) / Master (WMSP) 4: Service (WIDE) / Special
+            Data[3..n] Polling List
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_DATA_FLOW">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Get current Data Flow state (on or off)
+            Data null
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_DATA_FILTER">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Get current Data Filter state (on or off)
+            Data null
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SET_BUS_CONNECTION">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Set the hardware connection on the bus
+            Data[0] 0: Regular Uart Translator	1: Serial TX/RX expecting echo	2: Serial TX/RX skipping echo
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_BUS_CONNECTION">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Get the hardware connection on the bus
+            Data null
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_BUS_STATUS">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Get bus status information of all nodes in the bus
+            Data null
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_GET_BUS_ATTACHMENT_STATE">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Get bus attachment state information. It will ping the bus to check bus availability.
+            Data null
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_REQUEST_BUS_HARDWARE_TEST">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Request the Device to run a self test in one of the bus connections.
+            To Run a test in a connection use the CMD_SET_BUS_CONNECTION to set the to a different connection from the to test.
+            Data[0] Bus Connection: 0: Regular Uart Translator	1: Serial TX/RX expecting echo
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_REQUEST_BUS_HARDWARE_TEST_STATE">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Request the Device self test state.
+            Data null
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.CMD_SEND_DEVICE_COMMAND">
+            <summary>
+            Only Available in CCB2Protocol
+            <para>
+            Send a command to Device 
+            Data[0] Command: 0: Reset, 1: Factory Reset, 2: Test LEDS, 3: Generate a wake up signal on the Bus (100ms)
+            </para>
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.ACK">
+            <summary>
+            Ack message type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.BREAK">
+            <summary>
+            Break message type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.NACK">
+            <summary>
+            Nack message type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.DLE">
+            <summary>
+            DLE message type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.STRUCT_CHANGE">
+            <summary>
+            STRUCT_CHANGE message type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.DELTA_T">
+            <summary>
+            DELTA_T message type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.REVEAL_SAP">
+            <summary>
+            SAP for reveal messages
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.TDD_CMD_SAP">
+            <summary>
+            SAP for TDD Commands messages
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.TDD_FBK_SAP">
+            <summary>
+            SAP for TDD Feedback messages
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBoxConstants.GMCL_SAP">
+            <summary>
+            SAP for Gmcl messages
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.Crc16">
+            <summary>
+            Class that handle CRC16-CITT calculation
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.Crc16.FastCRCUpd(System.UInt16,System.Byte)">
+            <summary>
+            Calculate a new CRC value based on a new data byte and a given crc accumulation
+            </summary>
+            <param name="crc_accum">Start seed or previous acculated CRC value</param>
+            <param name="data_byte">new data byte to be calculate</param>
+            <returns>New CRC accumulation value</returns>
+        </member>
+        <member name="T:WideBoxLib.DeviceMessage">
+            <summary>
+            Device Message class
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.DeviceMessage.Message">
+            <summary>
+            Gets or sets the message from the Device.
+            </summary>
+            <value>
+            The message.
+            </value>
+            <remarks>
+            Possible available messages <see cref="T:WideBoxLib.DeviceMessageStrings"/>
+            </remarks>
+        </member>
+        <member name="P:WideBoxLib.DeviceMessage.Data">
+            <summary>
+            Gets or sets the Full data packet from the device.
+            </summary>
+            <value>
+            The data.
+            </value>
+        </member>
+        <member name="P:WideBoxLib.DeviceMessage.MessageTime">
+            <summary>
+            Gets or sets the message Time when the message has arrived.
+            </summary>
+            <value>
+            The message time.
+            </value>
+        </member>
+        <member name="M:WideBoxLib.DeviceMessage.ToString">
+            <summary>
+            Joins the Message and Data in one string like Message (Data[0],Data[1],...). Data in Hexadecimal display.
+            </summary>
+            <returns>String with Message and Data</returns>
+        </member>
+        <member name="M:WideBoxLib.DeviceMessage.ToString(System.String)">
+            <summary>
+            Joins the MessageTime, Message and Data in one string like MessageTime.ToString(timeStampFormat) + Message + (Data[0],Data[1],...)
+            </summary>
+            <param name="timeStampFormat">Desired format to MessageTime</param>
+            <returns>String with MessageTime, Message and Data with MessageTime with given format</returns>
+        </member>
+        <member name="M:WideBoxLib.DeviceMessage.ByteToHexString(System.Byte)">
+            <summary>
+            Return a byte in his Hexadecimal representation
+            </summary>
+            <param name="b">byte to convert to hexadecimal string</param>
+            <returns>byte as string in a Hexadecimal representation</returns>
+        </member>
+        <member name="T:WideBoxLib.DeviceMessageStrings">
+            <summary>
+            Current Device Message available strings.
+            </summary>
+            <remarks>Check <see cref="T:wbox.DeviceMessageStrings"/> for the Device message strings.</remarks>
+        </member>
+        <member name="M:WideBoxLib.Examples.GetMessageExample.Main">
+            <summary>
+            The main entry point for the application.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.Examples.GetMessageExample.threadRX(System.Object)">
+            <summary>
+            Run get message functions (device and wide/win/log replay/sockets)
+            Set messages to Console
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.Examples.GetMessageExample.SendMessage(WideBoxLib.WideBox,System.Byte,System.Byte,System.Byte[])">
+            <summary>
+            Send a message and wait 1 second for the Device Response
+            </summary>
+            <param name="widebox">reference to the widebox class</param>
+            <param name="destination">destination address</param>
+            <param name="SAP">desired SAP</param>
+            <param name="payload">data to be sent</param>
+            <returns>True if the Device acknowledge the message within 1 second</returns>
+        </member>
+        <member name="M:WideBoxLib.Examples.GetMessageExample.SendCommand(WideBoxLib.WideBox,System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Sends the command to the Device connected to the PC.
+            </summary>
+            <param name="widebox">The widebox.</param>
+            <param name="command">Current command to be sent: Use <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> to get the command list.</param>
+            <param name="data">The data for the given command.</param>
+        </member>
+        <member name="T:WideBoxLib.ExtendedSimpleWhirlpoolPacket">
+            <summary>
+            SimpleWhirlpoolPacket with validation and timestamp
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.ExtendedSimpleWhirlpoolPacket.TimeStamp">
+            <summary>
+            Get or Set the current Packet Timestamp
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.ExtendedSimpleWhirlpoolPacket.IsValid">
+            <summary>
+            Get or Set if the packet is valid
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.GmclPacket">
+            <summary>
+            Class that represents a Gmcl Packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.GmclPacket.SAP">
+            <summary>
+            Get the standard SAP of a Gmcl Packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.GmclPacket.Source">
+            <summary>
+            Get or Set the Source
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.GmclPacket.Destination">
+            <summary>
+            Get or Set the Destination
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.GmclPacket.Command">
+            <summary>
+            Get or Set the Command of current packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.GmclPacket.Length">
+            <summary>
+            Get or Set the Length of current packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.GmclPacket.Payload">
+            <summary>
+            Get or Set the Payload of current packet
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.#ctor">
+            <summary>
+            Instantiate a new TDDPacket
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.ParseWidePacket(System.Byte[])">
+            <summary>
+            Set the packet given a wide payload
+            </summary>
+            <param name="data">Wide payload data</param>
+            <returns>True if data is a valid TDD packet</returns>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.ParseSimpleWhirlpoolMessage(WideBoxLib.SimpleWhirlpoolPacket)">
+            <summary>
+            Set the packet given a Simple Whirlpool Packet 
+            </summary>
+            <param name="data">simple whirlpool packet</param>
+            <returns>True if data is a valid TDD packet</returns>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.getSimpleWhirlpoolPacket">
+            <summary>
+            Return the mounted reveal packet on the Simple Whirlpool Packet 
+            </summary>
+            <returns>Packet to be used in WideBox.SendMessage functions</returns>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.ToSimpleWhirlpoolPacket">
+            <summary>
+            Return the mounted reveal packet on the Simple Whirlpool Packet 
+            </summary>
+            <returns>Packet to be used in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see> function</returns>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.getMessagePayload">
+            <summary>
+            Return the mounted Gmcl packet on the SDU payload.
+            Include the Command as the first byte.
+            Can be used directly on the SendMessage function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see></returns>
+        </member>
+        <member name="M:WideBoxLib.GmclPacket.ToMessagePayload">
+            <summary>
+            Return the mounted Gmcl packet on the SDU payload.
+            Include the Command as the first byte.
+            Can be used directly on the SendMessage function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see></returns>
+        </member>
+        <member name="T:WideBoxLib.IMessage">
+            <summary>
+            Public interface to syncronize device and sw messages
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.IWhirlpoolWiredBus">
+            <summary>
+            Provides the interface with Whirlpool's communication devices such as CCB and CCB2. Can handle all current implemented protocols (PPW and CCB2).
+            </summary>    
+            <example>
+            Full Example on How to Get message from the bus or from the device and send message back Using a Console Application.
+            <code lang="C#" source="Examples/GetMessageExample.cs" />
+            Full Example on How to Get message from the bus or from the device and send message back Using a Console Application.
+            This example is show a simple Flush Send Receive message more in a script manner.
+            First example is on using PPW protocol (only WIDE) that can be used in old wide box or CCB/Smart Cables
+            <code lang="C#" source="Examples/ScriptSendReceiveMessage.cs" region="Flush_Send_Wait_Receive_CCB1"/>
+            This second example is on using CCB2 protocol that CCB2 box uses to talk WIN/WIDE/...
+            <code lang="C#" source="Examples/ScriptSendReceiveMessage.cs" region="Flush_Send_Wait_Receive_CCB2"/>
+            </example>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.EnableRawDataLog(System.Boolean)">
+            <summary>
+            Enable logging Raw state machine data into a log file
+            </summary>
+            <param name="enable">true to start logging into a file</param>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.SetSerial(System.String,System.Int32,WideBoxLib.WideBox.PC_PROTOCOL)">
+            <summary>
+            Set the serial port to the widebox communication
+            </summary>
+            <param name="port">COM name</param>
+            <param name="txinterval">interval between sending messages on the TX buffer</param>
+            <param name="protocol">set the PC protocol to use</param>
+            <returns>Feedback of opening: "OPEN" or "Port Not Available"</returns>
+            <example>The following example shows how to a set serial port to communicate CCB2 protocol<code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SetSerial"/></example>
+        </member>
+        <member name="P:WideBoxLib.IWhirlpoolWiredBus.PortName">
+            <summary>
+            Get Current Set port name
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a message through the Device, uses the current selected Bus Protocol
+            Block the execution until receives an Ack from the device or timeout has occurred
+            </summary>
+            <param name="address">Destination Address</param>
+            <param name="sap">SAP (4 for Reveal)</param>
+            <param name="data">Simple Whirlpool Message Payload (use getMessagePayload from RevealPacket and TDDPacket)</param>
+            <param name="blockingExecution">set true to make it a blocking call and then allow return false if message is not out after timeout</param>
+            <param name="timeout">Time in milliseconds to wait for the message being out</param>
+            <returns>True if message was send successfully before the timeout or False if the timeout has occurred</returns>
+            <remarks>
+            If you are planning to use SendMessage with blockingExecution equals true make sure this is called from a different 
+            thread than <see cref="M:WideBoxLib.IWhirlpoolWiredBus.GetSimpleWhirlpoolMessage(System.Boolean)">GetSimpleWhirlpoolMessage()</see> and <see cref="M:WideBoxLib.IWhirlpoolWiredBus.GetDeviceMessage(System.Boolean)">GetDeviceMessage()</see> because the messages are only looked up when removed from the buffer.
+            </remarks>
+            <example>One example on How to send a message expecting the acknowledge. <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SendMessage"/>
+            Now using the RevealPacket to send a message response <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SendRevealMessage"/>
+            </example>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.ClearMessagesBuffer">
+            <summary>
+            Clears the Simple Whirlpool messages buffer.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.GetSimpleWhirlpoolMessage(System.Boolean)">
+            <summary>
+            Get received message as an ExtendedSimpleWhirlpoolPacket.
+            If it returns a null means that is no message in the buffer or is another type of a message in the buffer if the skipOtherTypes is not set to true.
+            </summary>
+            <param name="skipOtherTypes">Set true to skip other types and search for the next <see cref="T:WideBoxLib.ExtendedSimpleWhirlpoolPacket">ExtendedSimpleWhirlpoolPacket</see></param>
+            <returns>The Message from the bus or null if no message is in the buffer or is another type of a message in the buffer if the skipOtherTypes is not set to true</returns>
+            <example>How to get a Message from the bus. <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="GetMessage"/>
+            </example>
+        </member>
+        <member name="P:WideBoxLib.IWhirlpoolWiredBus.IsNewMessagePresent">
+            <summary>
+            Get if new message is present in buffer.
+            If is true then you can call GetSimpleWhirlpoolMessage but it can still return null if the message was a Device Message
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.GetDeviceMessage(System.Boolean)">
+            <summary>
+            Get Device Messages from incoming buffer and returns null if the list is empty
+            </summary>
+            <returns>A DeviceMessage from incoming buffer, or null if buffer is empty</returns>
+            <example>Getting a device message needs to be called after a GetSimpleWhirlpoolMessage.
+            See <see cref="T:WideBoxLib.WideBox">WideBox</see> for a complete example.
+            <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="GetDeviceMessage"/>
+            
+            </example>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.SendCommand(System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a configuration command to the WideBox
+            <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> contains the list of available commands. Constant bytes that start with "CMD_".
+            </summary>
+            <param name="cmd">Current command to be sent: Use <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> to get the command list</param>
+            <param name="data">Data to the given command</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException">
+            byte 0 in data for CMD_SET_WIDE_BOX_ADDR need to be present;data
+            or
+            byte 0 in data for CMD_SET_PROTOCOL need to be present;data
+            </exception>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.IsComOpen">
+            <summary>
+            Return if the serial port selected is Open
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.Close">
+            <summary>
+            Closes the serial Port
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.IWhirlpoolWiredBus.ClearAllMessagesBuffer">
+            <summary>
+            Clears all message types in buffer.
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.RevealPacket">
+            <summary>
+            Class that represents a Reveal Packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.SAP">
+            <summary>
+            Get the standard SAP of a Reveal Packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.API">
+            <summary>
+            Get and Set the API of this packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.OpCode">
+            <summary>
+            Get and Set the opcode of this packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.FullOpcode">
+            <summary>
+            Get and set the full opcode byte including MMP,Frag and Cmd/Fb.
+            </summary>
+            <value>
+            The full opcode.
+            </value>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.Destination">
+            <summary>
+            Get and Set Destination Node
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.Source">
+            <summary>
+            Get and Set Source Node
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.PayLoadLength">
+            <summary>
+            Get and Set Length of this packet PayLoad
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.IsFragmented">
+            <summary>
+            Get and Set if this message is a Fragmented message (frag = 1 set it true)
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.iIsFragmented">
+            <summary>
+            Get and Set if this message is a Fragmented message (frag = 1 set it true)
+            Backward compatibility only
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.IsFeedback">
+            <summary>
+            Get and Set if this message is a Feedback message (Cmd/fb = 1 set it true)
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.MoreMessagePending">
+            <summary>
+            Get and Set if this packet has more messages pending (MMP = 1 set it true)
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.RevealPacket.PayLoad">
+            <summary>
+            Get and Set the Pay Load of this reveal packet
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.#ctor">
+            <summary>
+            Creates a empty packet
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Boolean,System.Byte[])">
+            <summary>
+            Creates a reveal packet with given fields
+            </summary>
+            <param name="api">Reveal API</param>
+            <param name="opcode">Reveal Opcode</param>
+            <param name="source">Address Node of the packet source</param>
+            <param name="destination">Address Node of the packet destination</param>
+            <param name="isFeedback">true if is a feedback message</param>
+            <param name="payload">Data to send trough packet (can be null)</param>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte[])">
+            <summary>
+            Creates a reveal packet with given fields
+            Is created as a command by default (i.e. isFeedback false)
+            </summary>
+            <param name="api">Reveal API</param>
+            <param name="opcode">Reveal Opcode</param>
+            <param name="source">Address Node of the packet source</param>
+            <param name="destination">Address Node of the packet destination</param>
+            <param name="payload">Data to send trough packet (can be null)</param>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.ParseWidePacket(System.Byte[])">
+            <summary>
+            Get a wide packet and transfer to this Reveal Packet.
+            If its not a reveal packet it returns false.
+            </summary>
+            <param name="widepkt">wide packet to be parsed</param>
+            <returns>True if widepkt was a RevealPacket</returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.ParseSimpleWhirlpoolMessage(WideBoxLib.SimpleWhirlpoolPacket)">
+            <summary>
+            Get a simple whirlpool packet and transfer to this Reveal Packet.
+            If its not a reveal packet it returns false.
+            </summary>
+            <param name="data">data packet to be parsed</param>
+            <returns>True if data was a RevealPacket</returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.getWideMsg">
+            <summary>
+            Return the mounted reveal packet including SAP, length, destination and source bytes
+            </summary>
+            <returns>Array of bytes containing Wide Payload plus Wide header (source, destination, sap and length) excluding SOP (0xED)</returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.getWidePayload">
+            <summary>
+            Return the mounted reveal packet on the wide payload
+            i.e only the bytes after and including the API number
+            Can be used directly on the SendWideMsg function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.WideBox.SendWideMsg(System.Byte,System.Byte,System.Byte[])">SendWideMsg</see></returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.getMessagePayload">
+            <summary>
+            Return the mounted reveal packet on the SDU payload
+            i.e only the bytes after and including the API number
+            Can be used directly on the SendMessage function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see></returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.ToMessagePayload">
+            <summary>
+            Return the mounted reveal packet on the SDU payload
+            i.e only the bytes after and including the API number
+            Can be used directly on the SendMessage function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see></returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.getSimpleWhirlpoolPacket">
+            <summary>
+            Return the mounted reveal packet on the Simple Whirlpool Packet 
+            </summary>
+            <returns>This RevealPacket as a SimpleWhirlpoolPacket</returns>
+        </member>
+        <member name="M:WideBoxLib.RevealPacket.ToSimpleWhirlpoolPacket">
+            <summary>
+            Return the mounted reveal packet on the Simple Whirlpool Packet 
+            </summary>
+            <returns>This RevealPacket as a SimpleWhirlpoolPacket</returns>
+        </member>
+        <member name="T:WideBoxLib.SimpleWhirlpoolPacket">
+            <summary>
+            Represents A Simple Whirlpool Packet Message that covers all of Whirlpool's communication protocols.
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.SimpleWhirlpoolPacket.SAP">
+            <summary>
+            Get or Set the Packet SAP
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.SimpleWhirlpoolPacket.Source">
+            <summary>
+            Get or Set the Packet Source
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.SimpleWhirlpoolPacket.Destination">
+            <summary>
+            Get or Set the Packet Destination
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.SimpleWhirlpoolPacket.Payload">
+            <summary>
+            Get or Set the Packet Payload
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.SimpleWhirlpoolPacket.ToString">
+            <summary>
+            Convert the ToArray method into a string of bytes in Hex and comma separated
+            <para>
+            SOURCE,DESTINATION,SAP,P0...Pn (for example 00,02,04,00,01,02...)
+            </para>
+            </summary>
+            <returns>A comma separated string with the Hex values of SOURCE,DESTINATION,SAP,P0...Pn (for example 00,02,04,00,01,02...)</returns>
+        </member>
+        <member name="M:WideBoxLib.SimpleWhirlpoolPacket.SetSimpleWhirlpoolPacketArray(System.Byte[])">
+            <summary>
+            Set this SWP with a byte array (same as the Send Message CCB2 command)
+            </summary>
+            <param name="swpacketarray">byte array with expected b[0]:source b[1]:destination b[2]:SAP b[3..n]:payload</param>
+            <returns>True if the swpacketarray was a valid SimpleWhirlpoolPacket message</returns>
+        </member>
+        <member name="M:WideBoxLib.SimpleWhirlpoolPacket.ToArray">
+            <summary>
+            Returns a byte array with expected b[0]:source b[1]:destination b[2]:SAP b[3..n]:payload
+            </summary>
+            <returns>Array of bytes containing a simple whirlpool packet structure (see summary)</returns>
+        </member>
+        <member name="M:WideBoxLib.SimpleWhirlpoolPacket.GetWideMessage">
+            <summary>
+            Convert Simple Whirlpool Packet to wide Message in order to be able to send messages over old dll's
+            </summary>
+            <returns>Array of bytes containing a Wide packet message</returns>
+        </member>
+        <member name="M:WideBoxLib.SimpleWhirlpoolPacket.SetWideMessage(System.Byte[])">
+            <summary>
+            Convert a wide message into a SimpleWhirlpool packet format
+            </summary>
+            <param name="wide_data">array of bytes containing a wide message</param>
+            <returns>True if the wide_data was a valid Wide packet message</returns>
+        </member>
+        <member name="T:WideBoxLib.TDDPacket">
+            <summary>
+            Class that represents a TDD Packet
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.TDDPacket.SAP">
+            <summary>
+            Enumeration of SAP that can represent a TDD Packet
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.TDDPacket.SAP.UTDD">
+            <summary>
+            UTDD Sap
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.TDDPacket.SAP.ATDD">
+            <summary>
+            ATDD Sap
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.TDDPacket.Source">
+            <summary>
+            Get or Set the Source
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.TDDPacket.Destination">
+            <summary>
+            Get or Set the Destination
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.TDDPacket.ModeType">
+            <summary>
+            TDD mode type
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.TDDPacket.ModeType.Non_Response">
+            <summary>
+            UTDD Packet that don't require a response back
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.TDDPacket.ModeType.Response">
+            <summary>
+            ATDD Packet that require a response back
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.TDDPacket.Mode">
+            <summary>
+            Get or Set the Mode of current packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.TDDPacket.Length">
+            <summary>
+            Get or Set the Length of current packet
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.TDDPacket.Payload">
+            <summary>
+            Get or Set the Payload of current packet
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.#ctor">
+            <summary>
+            Instantiate a new TDDPacket
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.ParseWidePacket(System.Byte[])">
+            <summary>
+            Set the packet given a wide payload
+            </summary>
+            <param name="data">Wide payload data</param>
+            <returns>True if data is a valid TDD packet</returns>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.ParseSimpleWhirlpoolMessage(WideBoxLib.SimpleWhirlpoolPacket)">
+            <summary>
+            Set the packet given a Simple Whirlpool Packet 
+            </summary>
+            <param name="data">simple whirlpool packet</param>
+            <returns>True if data is a valid TDD packet</returns>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.getSimpleWhirlpoolPacket">
+            <summary>
+            Return the mounted reveal packet on the Simple Whirlpool Packet 
+            </summary>
+            <returns>Packet to be used in WideBox.SendMessage functions</returns>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.ToSimpleWhirlpoolPacket">
+            <summary>
+            Return the mounted reveal packet on the Simple Whirlpool Packet 
+            </summary>
+            <returns>Packet to be used in WideBox.SendMessage functions</returns>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.getMessagePayload">
+            <summary>
+            Return the mounted TDD packet on the SDU payload
+            Can be used directly on the SendMessage function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see></returns>
+        </member>
+        <member name="M:WideBoxLib.TDDPacket.ToMessagePayload">
+            <summary>
+            Return the mounted TDD packet on the SDU payload
+            Can be used directly on the SendMessage function from WideBoxLib on data parameter
+            </summary>
+            <returns>Array of bytes containing the Message payload to serve as the data parameter in <see cref="M:WideBoxLib.IWhirlpoolWiredBus.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">SendMessage</see></returns>
+        </member>
+        <member name="T:WideBoxLib.WideBox">
+            <summary>
+            Provides the interface with Whirlpool's communication devices such as CCB and CCB2. Can handle all current implemented protocols (PPW and CCB2).
+            </summary>    
+            <example>
+            Full Example on How to Get message from the bus or from the device and send message back Using a Console Application.
+            <code lang="C#" source="Examples/GetMessageExample.cs" />
+            </example>
+        </member>
+        <member name="M:WideBoxLib.WideBox.EnableRawDataLog(System.Boolean)">
+            <summary>
+            Enable logging Raw state machine data into a log file
+            </summary>
+            <param name="enable">true to start logging into a file</param>
+        </member>
+        <member name="T:WideBoxLib.WideBox.WideBoxVersion">
+            <summary>
+            Represents a Version information of the device firmware
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.Major">
+            <summary>
+            Get or Set the Major version
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.Minor">
+            <summary>
+            Get or Set the Minor version
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.Increment">
+            <summary>
+            Get or Set the Increment version
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.HWMajor">
+            <summary>
+            Get or Set the Major version
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.HWMinor">
+            <summary>
+            Get or Set the Minor version
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.HWIncrement">
+            <summary>
+            Get or Set the Increment version
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.WideBoxVersion.Updated">
+            <summary>
+            Get or Set if the version is updated
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.WideBox.Version">
+            <summary>
+            Get or Set the Device version. 
+            Check the Updated field is true to know if the Version has valid info.
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.WideBox.PC_PROTOCOL">
+            <summary>
+            Enum the Current supported PC protocols to WideBox/CCB2/SmartCables
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.PC_PROTOCOL.CCB2">
+            <summary>
+            CCB2 protocol only for CCB2
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.PC_PROTOCOL.PPW">
+            <summary>
+            PPW Protocol that supports old CCB, don't support WIN/WMSP
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.WideBox.PCProtocol">
+            <summary>
+            Get the current Set PCProtocol
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.WideBox.PCProtocolCallback">
+            <summary>
+            PCProtocol callback delegate
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:WideBoxLib.WideBox.PCProtocolCallbackHandler">
+            <summary>
+            Get PCProtocol Callback Delegate handler. Set the callback function to this property.
+            Called when IsSetAndSendEventBased is true and PCProtocol function is get.
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.WideBox.BUS_PROTOCOL">
+            <summary>
+            Enum the Current supported Bus protocols to CCB2 Only
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.BUS_PROTOCOL.NONE">
+            <summary>
+            Set no protocol
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.BUS_PROTOCOL.WIDE">
+            <summary>
+            WIDE protocol
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.BUS_PROTOCOL.WIN">
+            <summary>
+            WIN protocol
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.BUS_PROTOCOL.WMSP">
+            <summary>
+            WMSP protocol
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:WideBoxLib.WideBox"/> class.
+            </summary>
+        </member>
+        <member name="E:WideBoxLib.WideBox.IncomingMessage">
+            <summary>
+            Event raised when one or more message are ready to be pulled from the Queue
+            If the message is a Device message the GetSimpleWhirlpoolMessage will return null message and will raise the IncomingDeviceMessage event
+            </summary>
+        </member>
+        <member name="E:WideBoxLib.WideBox.IncomingDeviceMessage">
+            <summary>
+            Event raised when one or more device messages are ready to be pulled from Device Message Queue
+            This event is only raised if the client call getMsg and a device message was in the queue instead
+            Call GetDeviceMessage to pull from Device Messages Queue after this event is raised
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.WideBox.SerialResponseData">
+            <summary>
+            Enumeration of available SerialResponseData
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.SerialResponseData.OPEN">
+            <summary>
+            Port successfully opened
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.SerialResponseData.CLOSE">
+            <summary>
+            Port successfully closed
+            </summary>
+        </member>
+        <member name="F:WideBoxLib.WideBox.SerialResponseData.NOT_AVAILABLE">
+            <summary>
+            Port not available in this machine
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.WideBox.IsSetAndSendEventBased">
+            <summary>
+            Set or Get true if the SetSerial, Close, SendCommand, IsComOpen, PortName and SendMessage functions call their respective callbacks and don't pass down to serial port.
+            Callbacks will only be called if this property is true.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SetSerial(System.String,System.Int32,WideBoxLib.WideBox.PC_PROTOCOL)">
+            <summary>
+            Set the serial port to the widebox communication
+            </summary>
+            <param name="port">COM name</param>
+            <param name="txinterval">interval between sending messages on the TX buffer</param>
+            <param name="protocol">set the PC protocol to use</param>
+            <returns>Feedback of opening: "OPEN" or "Port Not Available"</returns>
+            <example>The following example shows how to a set serial port to communicate CCB2 protocol<code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SetSerial"/></example>
+        </member>
+        <member name="T:WideBoxLib.WideBox.SetSerialCallback">
+            <summary>
+            Set Serial callback delegate
+            </summary>
+            <param name="port"></param>
+            <param name="txinterval"></param>
+            <param name="protocol"></param>
+            <returns></returns>
+        </member>
+        <member name="P:WideBoxLib.WideBox.SetSerialCallbackHandler">
+            <summary>
+            Set Serial Callback Delegate handler. Set the callback function to this property.
+            Called when IsSetAndSendEventBased is true and SetSerial function is called.
+            </summary>
+        </member>
+        <member name="P:WideBoxLib.WideBox.PortName">
+            <summary>
+            Get Current Set port name
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.WideBox.PortNameCallback">
+            <summary>
+            PortName callback delegate
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:WideBoxLib.WideBox.PortNameCallbackHandler">
+            <summary>
+            Port Name Callback Delegate handler. Set the callback function to this property.
+            Called when IsSetAndSendEventBased is true and PortName property is get.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendMessage(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a message through the Device, uses the current selected Bus Protocol
+            Block the execution until receives an Ack from the device or timeout has occurred
+            </summary>
+            <param name="address">Destination Address</param>
+            <param name="sap">SAP (4 for Reveal)</param>
+            <param name="data">Simple Whirlpool Message Payload (use getMessagePayload from RevealPacket and TDDPacket)</param>
+            <param name="blockingExecution">set true to make it a blocking call and then allow return false if message is not out after timeout</param>
+            <param name="timeout">Time in milliseconds to wait for the message being out</param>
+            <returns>True if message was send successfully before the timeout or False if the timeout has occurred</returns>
+            <remarks>
+            If you are planning to use SendMessage with blockingExecution equals true make sure this is called from a different 
+            thread than <see cref="M:WideBoxLib.IWhirlpoolWiredBus.GetSimpleWhirlpoolMessage(System.Boolean)">GetSimpleWhirlpoolMessage()</see> and <see cref="M:WideBoxLib.IWhirlpoolWiredBus.GetDeviceMessage(System.Boolean)">GetDeviceMessage()</see> because the messages are only looked up when removed from the buffer.
+            </remarks>
+            <example>One example on How to send a message expecting the acknowledge. <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SendMessage"/>
+            Now using the RevealPacket to send a message response <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SendRevealMessage"/>
+            </example>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendMessage(System.Byte,System.Byte,System.Byte[]@,System.Boolean,System.Double)">
+            <summary>
+            COM friendly version of SendMessage
+            Send a message through the Device, uses the current selected Bus Protocol
+            Block the execution until receives an Ack from the device or timeout has occurred
+            </summary>
+            <param name="address">Destination Address</param>
+            <param name="sap">SAP (4 for Reveal)</param>
+            <param name="data">Simple Whirlpool Message Payload (use getMessagePayload from RevealPacket and TDDPacket) as reference, can be used in VB6</param>
+            <param name="blockingExecution">set true to make it a blocking call and then allow return false if message is not out after timeout</param>
+            <param name="timeout">Time in milliseconds to wait for the message being out</param>
+            <returns>True if message was send successfully before the timeout or False if the timeout has occurred</returns>
+            <remarks>
+            If you are planning to use SendMessage with blockingExecution equals true make sure this is called from a different 
+            thread than <see cref="M:WideBoxLib.IWhirlpoolWiredBus.GetSimpleWhirlpoolMessage(System.Boolean)">GetSimpleWhirlpoolMessage()</see> and <see cref="M:WideBoxLib.IWhirlpoolWiredBus.GetDeviceMessage(System.Boolean)">GetDeviceMessage()</see> because the messages are only looked up when removed from the buffer.
+            </remarks>
+            <example>One example on How to send a message expecting the acknowledge. <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SendMessage"/>
+            Now using the RevealPacket to send a message response <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="SendRevealMessage"/>
+            </example>
+        </member>
+        <member name="T:WideBoxLib.WideBox.SendMessageCallback">
+            <summary>
+            SendMessageCallback delegate
+            </summary>
+            <param name="address">Destination Address</param>
+            <param name="sap">SAP (4 for Reveal)</param>
+            <param name="data">Simple Whirlpool Message Payload (use getMessagePayload from RevealPacket and TDDPacket)</param>
+            <param name="blockingExecution">set true to make it a blocking call and then allow return false if message is not out after timeout</param>
+            <param name="timeout">Time in milliseconds to wait for the message being out</param>
+        </member>
+        <member name="P:WideBoxLib.WideBox.SendMessageCallbackHandler">
+            <summary>
+            SendMessage Callback handler. Set the callback function to this property.
+            Called when IsSetAndSendEventBased is true and SendMessage function is called.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendWideMsg(System.Byte,System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a wide message through  wide box
+            </summary>
+            <param name="address">Destination Address</param>
+            <param name="sap">SAP (4 for Reveal)</param>
+            <param name="data">Wide Payload (use getWidePayload from RevealPacket)</param>
+            <param name="blockingExecution">set true to make it a blocking call and then allow return false if message is not out after timeout</param>
+            <param name="timeout">Time in milliseconds to wait for the message being out</param>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendWideMsg(System.Byte,System.Byte,System.Byte[])">
+            <summary>
+            Wrapper to the old void SendWideMsg
+            </summary>
+            <param name="address">Destination Address</param>
+            <param name="sap">SAP (4 for Reveal)</param>
+            <param name="data">Wide Payload (use getWidePayload from RevealPacket)</param>
+        </member>
+        <member name="M:WideBoxLib.WideBox.getMsg">
+            <summary>
+            Get message from incoming buffer
+            If it returns an empty array (bytes.Lenght == 0) means that is no message in the buffer anymore.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WideBoxLib.WideBox.getMsg(System.DateTime@)">
+            <summary>
+            Get message from incoming buffer with the timestamp
+            If it returns an empty array (bytes.Lenght == 0) means that is no message in the buffer anymore.
+            </summary>
+            <param name="msgTime">Time Stamp of current Message</param>
+            <returns></returns>
+        </member>
+        <member name="M:WideBoxLib.WideBox.getMsg(System.DateTime@,System.Boolean@)">
+            <summary>
+            Get message from incoming buffer with the timestamp and if it's valid. (Only for WIDE messages).
+            If it returns an empty array (bytes.Lenght == 0) means that is no message in the buffer anymore.
+            <para>
+            If this function is called then the message is removed from the buffer
+            and will not show up when GetSimpleWhirlpoolMessage call.
+            </para>
+            </summary>
+            <param name="msgTime">Time Stamp of current Message</param>
+            <param name="valid">True if the message is valid</param>
+            <returns></returns>
+        </member>
+        <member name="M:WideBoxLib.WideBox.ClearMessagesBuffer">
+            <summary>
+            Clears the Simple Whirlpool messages buffer.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.ClearDeviceMessagesBuffer">
+            <summary>
+            Clears the Device Messages buffer.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.ClearAllMessagesBuffer">
+            <summary>
+            Clears all message types buffer.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.GetSimpleWhirlpoolMessage(System.Boolean)">
+            <summary>
+            Get received message as an ExtendedSimpleWhirlpoolPacket.
+            If it returns a null means that is no message in the buffer or is another type of a message in the buffer if the skipOtherTypes is not set to true.
+            </summary>
+            <param name="skipOtherTypes">Set true to skip other types and search for the next <see cref="T:WideBoxLib.ExtendedSimpleWhirlpoolPacket">ExtendedSimpleWhirlpoolPacket</see></param>
+            <returns>
+            The Message from the bus or null if no message is in the buffer or is another type of a message in the buffer if the skipOtherTypes is not set to true
+            </returns>
+            <example>How to get a Message from the bus. <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="GetMessage" /></example>
+        </member>
+        <member name="M:WideBoxLib.WideBox.getPCProtocolMessages">
+            <summary>
+            Get receives message as an ExtendedSimpleWhirlpoolPacket.
+            If it returns an null means that is no message in the buffer anymore.
+            </summary>
+            <returns>The Message from the bus or null if no message is in the buffer</returns>
+            <example>How to get a Message from the bus. <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="GetMessage"/>
+            </example>
+        </member>
+        <member name="P:WideBoxLib.WideBox.ExceptionLog">
+            <summary>
+            Gets the exception log.
+            </summary>
+            <value>
+            The exception log.
+            </value>
+        </member>
+        <member name="P:WideBoxLib.WideBox.IsNewMessagePresent">
+            <summary>
+            Get if new message is present in buffer.
+            If is true then you can call GetSimpleWhirlpoolMessage but it can still return null if the message was a Device Message
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.getWideBoxDeviceMsg">
+            <summary>
+            Get wide box device messages from incoming buffer and returns null if the list is empty
+            </summary>
+            <returns>A DeviceMessage from incoming buffer, or null if buffer is empty</returns>
+        </member>
+        <member name="M:WideBoxLib.WideBox.GetDeviceMessage(System.Boolean)">
+            <summary>
+            Get Device Messages from incoming buffer and returns null if the list is empty or is another type of a message in the buffer if the skipOtherTypes is not set to true.
+            </summary>
+            <param name="skipOtherTypes">Set true to skip other types and search for the next <see cref="T:WideBoxLib.DeviceMessage">DeviceMessage</see></param>
+            <returns>
+            A DeviceMessage from incoming buffer, or null if buffer is empty or is another type of a message in the buffer if the skipOtherTypes is not set to true
+            </returns>
+            <example>Getting a device message needs to be called after a GetSimpleWhirlpoolMessage or skipOtherTypes must be set to true.
+            See <see cref="T:WideBoxLib.WideBox">WideBox</see> for a complete example.
+            <code lang="C#" title="C#" source="Examples/GetMessageExample.cs" region="GetDeviceMessage" /></example>
+        </member>
+        <member name="M:WideBoxLib.WideBox.GetMessage">
+            <summary>
+            Gets the last message on the internal buffer.
+            <para>Cast to the one of the Current IMessage implementers to check it's type.</para>
+            <para>
+            Current IMessage implementers:
+            <para><see cref="T:WideBoxLib.ExtendedSimpleWhirlpoolPacket"> - ExtendedSimpleWhirlpoolPacket;</see></para>
+            <para><see cref="T:WideBoxLib.SimpleWhirlpoolPacket"> - SimpleWhirlpoolPacket;</see></para>
+            <para><see cref="T:WideBoxLib.DeviceMessage"> - DeviceMessage.</see></para>
+            </para>
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendCommand(System.Byte,System.Byte[])">
+            <summary>
+            Send a configuration command to the WideBox
+            <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> contains the list of available commands. Constant bytes that start with "CMD_".
+            </summary>
+            <param name="cmd">Current command to be sent: Use <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> to get the command list</param>
+            <param name="data">Data to the given command</param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException">
+            byte 0 in data for CMD_SET_WIDE_BOX_ADDR need to be present;data
+            or
+            byte 0 in data for CMD_SET_PROTOCOL need to be present;data
+            </exception>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendCommand(System.Byte,System.Byte[],System.Boolean,System.Double)">
+            <summary>
+            Send a configuration command to the WideBox
+            <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> contains the list of available commands. Constant bytes that start with "CMD_".
+            </summary>
+            <param name="cmd">Current command to be sent: Use <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> to get the command list</param>
+            <param name="data">Data to the given command</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException">
+            byte 0 in data for CMD_SET_WIDE_BOX_ADDR need to be present;data
+            or
+            byte 0 in data for CMD_SET_PROTOCOL need to be present;data
+            </exception>
+        </member>
+        <member name="M:WideBoxLib.WideBox.SendCommand(System.Byte,System.Byte[]@,System.Boolean,System.Double)">
+            <summary>
+            COM friendly version of SendCommand
+            Send a configuration command to the WideBox
+            <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> contains the list of available commands. Constant bytes that start with "CMD_".
+            </summary>
+            <param name="cmd">Current command to be sent: Use <see cref="T:WideBoxLib.WideBoxConstants">WideBoxConstants</see> to get the command list</param>
+            <param name="data">Data to the given command</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException">
+            byte 0 in data for CMD_SET_WIDE_BOX_ADDR need to be present;data
+            or
+            byte 0 in data for CMD_SET_PROTOCOL need to be present;data
+            </exception>
+        </member>
+        <member name="T:WideBoxLib.WideBox.SendCommandCallback">
+            <summary>
+            SendCommand callback delegate
+            </summary>
+            <param name="cmd">Current command to be sent: Use WideBoxConstants to get the command list</param>
+            <param name="data">Data to the given command</param>
+            <param name="blockingExecution">if set to <c>true</c> [blocking execution].</param>
+            <param name="timeout">The timeout.</param>
+            <returns></returns>
+        </member>
+        <member name="P:WideBoxLib.WideBox.SendCommandCallbackHandler">
+            <summary>
+            SendCommand Callback handler. Set the callback function to this property.
+            Called when IsSetAndSendEventBased is true and SendCommand function is called.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.IsComOpen">
+            <summary>
+            Return if the serial port selected is Open
+            </summary>
+            <returns>True if the COM port is open</returns>
+        </member>
+        <member name="T:WideBoxLib.WideBox.IsComOpenCallback">
+            <summary>
+            IsComOpen Callback delegate
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:WideBoxLib.WideBox.IsComOpenCallbackHandler">
+            <summary>
+            IsComOpen Callback handler. Set the callback function to this property.
+            </summary>
+        </member>
+        <member name="M:WideBoxLib.WideBox.Close">
+            <summary>
+            Closes the serial Port
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.WideBox.CloseCallback">
+            <summary>
+            Close callback delegate
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:WideBoxLib.WideBox.CloseCallbackHandler">
+            <summary>
+            Close Callback Delegate handler. Set the callback function to this property.
+            </summary>
+        </member>
+        <member name="T:WideBoxLib.NamespaceDoc">
+            <summary>
+            WideBoxLib namespace contains classes that provides support to connect with Whirlpool's communication devices like WideBox, CCB and CCB2.
+            Open IWhirlpoolWiredBus interface to see full examples.
+            </summary>
+        </member>
+    </members>
+</doc>

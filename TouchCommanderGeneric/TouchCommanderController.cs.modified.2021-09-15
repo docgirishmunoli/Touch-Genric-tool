@@ -1,0 +1,219 @@
+﻿using System;
+using System.Windows.Forms;
+
+namespace TouchCommanderGenericNamespace
+{
+    public class TouchCommanderController
+    {
+        TouchCommanderGenericForm widebox;
+        TouchCommanderMainView mainView;
+        TouchCommanderMainModel mainModel;
+
+        byte[] i2c_addr_list;
+        byte[] i2c_bus_list;
+        byte[][] key_mapping;
+        byte no_of_slaves;
+        String[] device_type;
+        String[] sensing_type;
+
+        public TouchCommanderController(TouchCommanderGenericForm form)
+        {
+            widebox = form;
+            mainView = new TouchCommanderMainView(this);
+            mainModel = new TouchCommanderMainModel(this);
+            no_of_slaves = 0;
+        }
+
+        public Control getMainView()
+        {
+            return mainView;
+        }
+
+        public TouchCommanderModelBase GetModel(string name)
+        {
+            return mainModel.getModel(name);
+        }
+
+        public TouchCommanderTabBase GetView(string name)
+        {
+            return mainView.getView(name);
+        }
+
+        public void setHMINodeId(int nodeID)
+        {
+            widebox.setHMINodeId((byte)nodeID);
+        }
+
+        public void RequestHWInfo()
+        {
+            widebox.SendRuequestTouchHardwreInformation();
+        }
+
+        public void StartHeartBeatForSlave()
+        {
+            widebox.SendRequestHeartBeat();
+        }
+
+        public void StartStatusReportPublishing(byte slave_count, bool periodic)
+        {
+            widebox.SendRequestStatusReport(slave_count, periodic);
+        }
+
+        public void SendI2CCommand(String source_view, byte slaveid, byte command, byte oprand)
+        {
+            widebox.SendI2CCommand(source_view, slaveid, command, oprand);
+        }
+
+        public void SendI2CWriteCommand(String source_view, byte slaveid, String address_type, UInt16 offset_addr, byte[] data)
+        {
+            widebox.SendI2CWriteCommand(source_view, slaveid, address_type, offset_addr, data);
+        }
+
+        public void SendI2CReadCommand(String source_view, byte slaveid, String address_type, UInt16 offset_addr, byte bytes_to_read)
+        {
+            SendI2CReadCommand(source_view, "", slaveid, address_type, offset_addr, bytes_to_read);
+        }
+        public void SendI2CReadCommand(String source_view, String subview, byte slaveid, String address_type, UInt16 offset_addr, byte bytes_to_read)
+        {
+            widebox.SendI2CReadCommand(source_view, subview, slaveid, address_type, offset_addr, bytes_to_read);
+        }
+
+        public void SendDelayCommand(UInt16 duration)
+        {
+            widebox.SendDelayCommand(duration);
+        }
+
+        public void SendDataMonitoringStartCmd(UInt16 monitor_bits, byte delta_pub_limit, byte raw_pub_limit, byte ref_pub_limit, byte[] keys)
+        {
+            widebox.SendDataMonitoringStartCmd(monitor_bits, delta_pub_limit, raw_pub_limit, ref_pub_limit, keys);
+        }
+
+        public void SendDataMonitoringStopCmd()
+        {
+            widebox.SendDataMonitoringStopCmd();
+        }
+
+        public void ClearCommandQueue()
+        {
+            widebox.ClearCommandQueue();
+        }
+
+        public void update(string name, byte[] data)
+        {
+            mainModel.updateModel(name, data);
+            mainView.updateView(name, mainModel.getModel(name));
+        }
+
+        public void update(string name, string section, byte[] data)
+        {
+            mainModel.updateModel(name, section, data);
+            mainView.updateView(name, section, mainModel.getModel(name));
+        }
+
+        public void SetSlaveI2CAddressList(byte[] i2c_addrs)
+        {
+            i2c_addr_list = i2c_addrs;
+        }
+
+        public void SetSlaveI2CBusList(byte[] i2c_buses)
+        {
+            i2c_bus_list = i2c_buses;
+        }
+
+        public byte GetSlaveI2CAddress(byte slave_id)
+        {
+            if (i2c_addr_list != null)
+            {
+                return i2c_addr_list[slave_id];
+            }
+            else
+            {
+                return 0xFF;
+            }
+        }
+
+        public byte GetSlaveIdFromI2CAddress(byte i2c_address)
+        {
+            if (i2c_addr_list != null)
+            {
+                for (byte i = 0; i < no_of_slaves; i++)
+                {
+                    if (i2c_addr_list[i] == i2c_address)
+                    {
+                        return i;
+                    }
+                }
+            }
+            return 0xFF;
+        }
+
+        public byte GetSlaveI2CBus(byte slave_id)
+        {
+            if (i2c_bus_list != null)
+            {
+                return i2c_bus_list[slave_id];
+            }
+            else
+            {
+                return 0xFF;
+            }
+        }
+
+        public byte GetNumberOfSlaves()
+        {
+            return no_of_slaves;
+        }
+
+        public void SetNumberOfSlaves(byte slave_count)
+        {
+            no_of_slaves = slave_count;
+
+            device_type = new String[no_of_slaves];
+            sensing_type = new String[no_of_slaves];
+        }
+
+        public byte[][] GetKeyMapping()
+        {
+            return key_mapping;
+        }
+
+        public void SetKeyMapping(byte[][] map)
+        {
+            key_mapping = map;
+        }
+
+        public String GetDeviceType(byte slave_id)
+        {
+            return device_type[slave_id];
+        }
+
+        public void SetDeviceType(byte slave_id, String type)
+        {
+            if (device_type[slave_id] == null)
+            {
+                device_type[slave_id] = new String(type.ToCharArray());
+            }
+            else
+            {
+                device_type[slave_id] = type;
+            }
+        }
+
+        public String GetSensingType(byte slave_id)
+        {
+            return sensing_type[slave_id];
+        }
+
+        public void SetSensingType(byte slave_id, String type)
+        {
+            if (sensing_type[slave_id] == null)
+            {
+                sensing_type[slave_id] = new String(type.ToCharArray());
+            }
+            else
+            {
+                sensing_type[slave_id] = type;
+            }
+        }
+    }
+}
