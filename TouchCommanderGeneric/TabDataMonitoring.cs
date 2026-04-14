@@ -734,6 +734,18 @@ namespace TouchCommanderGenericNamespace
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // SNR
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F));  // MaxDelta
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75F));  // Status
+                monitoring_views[i].tableview.Size = new Size(600, 630);
+                monitoring_views[i].tableview.ColumnCount = 8;
+                monitoring_views[i].tableview.RowCount = 1;
+                //monitoring_views[i].tableview.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Logical Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Sensor Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Raw
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Ref
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Delta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // SNR
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // MaxDelta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Status
 
                 monitoring_views[i].tableview.RowStyles.Add(new RowStyle(SizeType.AutoSize, 80F));
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 0, 0);
