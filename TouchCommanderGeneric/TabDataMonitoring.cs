@@ -499,6 +499,7 @@ namespace TouchCommanderGenericNamespace
             public Label lbRaw;
             public Label lbBaseline;
             public Label lbDelta;
+            public Label lbSnr;
             // public Label lbMaxdeltaFW;      // HIDDEN - Not needed in UI
             public Label lbMaxdelta;           // Tool-calculated Max Delta (renamed from lbMaxdelta)
             public Label lbKeystatus;
@@ -510,6 +511,7 @@ namespace TouchCommanderGenericNamespace
             public CheckBox cbRaw;
             public CheckBox cbBaseline;
             public CheckBox cbDelta;
+            public CheckBox cbSnr;
             public CheckBox cbMaxdelta;         // Tool Max Delta checkbox (only one needed)
             //public CheckBox cbKeystatus;
         }
@@ -537,6 +539,7 @@ namespace TouchCommanderGenericNamespace
         private Button btnLogBrowse;
         private Button btnClearMaxDelta;
         private Label lbLogTimer;
+        private Label lbSnrCaptureInfo;
         private Label lbSelNumKeysToRequest;
         private ComboBox cbSelNumKeysToRequest;
         private bool bLoggingEnabled;
@@ -554,6 +557,14 @@ namespace TouchCommanderGenericNamespace
         private UInt16[][] prevRaw;
         private UInt16[][] prevRef;
         private bool[][] prevKeyStatus;
+        private bool[][] nonTouchSampleCaptured;
+        private bool[][] touchSampleCaptured;
+        private UInt16[][] nonTouchRawSample;
+        private UInt16[][] touchRawSample;
+        private UInt16[][] nonTouchMinRaw;
+        private UInt16[][] nonTouchMaxRaw;
+        private UInt32[][] nonTouchRawSum;
+        private UInt32[][] nonTouchRawCount;
 
         public DataMonitoringTabPage(TouchCommanderController c) : base(c)
         {
@@ -642,6 +653,14 @@ namespace TouchCommanderGenericNamespace
             lbLogTimer.AutoSize = true;
             this.Controls.Add(lbLogTimer);
 
+            lbSnrCaptureInfo = new Label();
+            lbSnrCaptureInfo.Text = "";
+            lbSnrCaptureInfo.Location = new Point(20, 45);
+            lbSnrCaptureInfo.Size = new Size(1500, 20);
+            lbSnrCaptureInfo.ForeColor = Color.DarkBlue;
+            lbSnrCaptureInfo.Visible = false;
+            this.Controls.Add(lbSnrCaptureInfo);
+
             // Clear Max Delta Button
             btnClearMaxDelta = new Button();
             btnClearMaxDelta.Location = new Point(730, 10);
@@ -708,17 +727,18 @@ namespace TouchCommanderGenericNamespace
 
                 monitoring_views[i].tableview = new TableLayoutPanel();
                 monitoring_views[i].tableview.Location = new Point(40, 70);
-                monitoring_views[i].tableview.Size = new Size(600, 630);
-                monitoring_views[i].tableview.ColumnCount = 7;
+                monitoring_views[i].tableview.Size = new Size(650, 630);
+                monitoring_views[i].tableview.ColumnCount = 8;
                 monitoring_views[i].tableview.RowCount = 1;
                 //monitoring_views[i].tableview.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Logical Id
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Sensor Id
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Raw
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Ref
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Delta
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // MaxDelta
-                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Status
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));  // Logical Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));  // Sensor Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // Raw
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // Ref
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // Delta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // SNR
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F));  // MaxDelta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75F));  // Status
 
                 monitoring_views[i].tableview.RowStyles.Add(new RowStyle(SizeType.AutoSize, 80F));
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 0, 0);
@@ -743,10 +763,15 @@ namespace TouchCommanderGenericNamespace
                 monitoring_views[i].tableview.Controls.Add(monitoring_views[i].data_enable.cbDelta, 4, 0);
                 mon_param_enabled[i].delta_enable = monitoring_views[i].data_enable.cbDelta.Checked;
 
+                monitoring_views[i].data_enable.cbSnr = new CheckBox() { CheckAlign = ContentAlignment.MiddleCenter, Checked = true };
+                monitoring_views[i].data_enable.cbSnr.CheckedChanged += delegate (object sender, EventArgs e)
+                { CheckBox_CheckedChanged(sender, e, "Snr", slaveid); };
+                monitoring_views[i].tableview.Controls.Add(monitoring_views[i].data_enable.cbSnr, 5, 0);
+
                 monitoring_views[i].data_enable.cbMaxdelta = new CheckBox() { CheckAlign = ContentAlignment.MiddleCenter, Checked = true };
                 monitoring_views[i].data_enable.cbMaxdelta.CheckedChanged += delegate (object sender, EventArgs e)
                 { CheckBox_CheckedChanged(sender, e, "Maxdelta", slaveid); };
-                monitoring_views[i].tableview.Controls.Add(monitoring_views[i].data_enable.cbMaxdelta, 5, 0);
+                monitoring_views[i].tableview.Controls.Add(monitoring_views[i].data_enable.cbMaxdelta, 6, 0);
 
                 // Add checkbox event handler for MaxΔ(Tool)
                 monitoring_views[i].data_enable.cbMaxdelta.Tag = i;
@@ -772,7 +797,7 @@ namespace TouchCommanderGenericNamespace
                 monitoring_views[i].tableview.Controls.Add(monitoring_views[i].data_enable.cbKeystatus, 6, 0);
                 mon_param_enabled[i].keystatus_enable = monitoring_views[i].data_enable.cbKeystatus.Checked;
                 */
-                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 6, 0);
+                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 7, 0);
                 mon_param_enabled[i].keystatus_enable = true;
 
                 model.set_enable_data_monitoring((byte)i, mon_param_enabled[i]);
@@ -784,8 +809,9 @@ namespace TouchCommanderGenericNamespace
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "Raw", TextAlign = ContentAlignment.MiddleCenter }, 2, 1);
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "Ref", TextAlign = ContentAlignment.MiddleCenter }, 3, 1);
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "Delta", TextAlign = ContentAlignment.MiddleCenter }, 4, 1);
-                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "MaxDelta", TextAlign = ContentAlignment.MiddleCenter }, 5, 1);
-                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "Status", TextAlign = ContentAlignment.MiddleCenter }, 6, 1);
+                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "SNR", TextAlign = ContentAlignment.MiddleCenter }, 5, 1);
+                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "MaxDelta", TextAlign = ContentAlignment.MiddleCenter }, 6, 1);
+                monitoring_views[i].tableview.Controls.Add(new Label() { Text = "Status", TextAlign = ContentAlignment.MiddleCenter }, 7, 1);
 
                 byte[] physical_keyid = model.GetPhysicalKeyId((byte)i);
 
@@ -809,12 +835,15 @@ namespace TouchCommanderGenericNamespace
                     monitoring_views[i].sensor_data[j].lbDelta = new Label() { Text = String.Format("0"), TextAlign = ContentAlignment.MiddleCenter };
                     monitoring_views[i].tableview.Controls.Add(monitoring_views[i].sensor_data[j].lbDelta, 4, monitoring_views[i].tableview.RowCount - 1);
 
+                    monitoring_views[i].sensor_data[j].lbSnr = new Label() { Text = String.Format("0.00"), TextAlign = ContentAlignment.MiddleCenter };
+                    monitoring_views[i].tableview.Controls.Add(monitoring_views[i].sensor_data[j].lbSnr, 5, monitoring_views[i].tableview.RowCount - 1);
+
                     // Max Delta (Tool-calculated from Delta)
                     monitoring_views[i].sensor_data[j].lbMaxdelta = new Label() { Text = String.Format("0"), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.White };
-                    monitoring_views[i].tableview.Controls.Add(monitoring_views[i].sensor_data[j].lbMaxdelta, 5, monitoring_views[i].tableview.RowCount - 1);
+                    monitoring_views[i].tableview.Controls.Add(monitoring_views[i].sensor_data[j].lbMaxdelta, 6, monitoring_views[i].tableview.RowCount - 1);
 
                     monitoring_views[i].sensor_data[j].lbKeystatus = new Label() { Text = String.Format("OFF"), TextAlign = ContentAlignment.MiddleCenter };
-                    monitoring_views[i].tableview.Controls.Add(monitoring_views[i].sensor_data[j].lbKeystatus, 6, monitoring_views[i].tableview.RowCount - 1);
+                    monitoring_views[i].tableview.Controls.Add(monitoring_views[i].sensor_data[j].lbKeystatus, 7, monitoring_views[i].tableview.RowCount - 1);
                 }
                 monitoring_views[i].gbSlaveId.Controls.Add(monitoring_views[i].tableview);
                 logical_id_offset += keys_per_slave[i];
@@ -828,6 +857,14 @@ namespace TouchCommanderGenericNamespace
             prevRaw = new UInt16[no_of_slaves][];
             prevRef = new UInt16[no_of_slaves][];
             prevKeyStatus = new bool[no_of_slaves][];
+            nonTouchSampleCaptured = new bool[no_of_slaves][];
+            touchSampleCaptured = new bool[no_of_slaves][];
+            nonTouchRawSample = new UInt16[no_of_slaves][];
+            touchRawSample = new UInt16[no_of_slaves][];
+            nonTouchMinRaw = new UInt16[no_of_slaves][];
+            nonTouchMaxRaw = new UInt16[no_of_slaves][];
+            nonTouchRawSum = new UInt32[no_of_slaves][];
+            nonTouchRawCount = new UInt32[no_of_slaves][];
 
             for (int i = 0; i < no_of_slaves; i++)
             {
@@ -837,6 +874,14 @@ namespace TouchCommanderGenericNamespace
                 prevRaw[i] = new UInt16[keyCount];
                 prevRef[i] = new UInt16[keyCount];
                 prevKeyStatus[i] = new bool[keyCount];
+                nonTouchSampleCaptured[i] = new bool[keyCount];
+                touchSampleCaptured[i] = new bool[keyCount];
+                nonTouchRawSample[i] = new UInt16[keyCount];
+                touchRawSample[i] = new UInt16[keyCount];
+                nonTouchMinRaw[i] = new UInt16[keyCount];
+                nonTouchMaxRaw[i] = new UInt16[keyCount];
+                nonTouchRawSum[i] = new UInt32[keyCount];
+                nonTouchRawCount[i] = new UInt32[keyCount];
             }
 
             bViewInitComplete = true;
@@ -890,6 +935,12 @@ namespace TouchCommanderGenericNamespace
                         if (monitoring_views[slaveid].data_enable.cbDelta.Checked)
                         {
                             LogHeaderFields += ",Delta";
+                        }
+                        if (monitoring_views[slaveid].data_enable.cbDelta.Checked &&
+                            monitoring_views[slaveid].data_enable.cbBaseline.Checked &&
+                            monitoring_views[slaveid].data_enable.cbSnr.Checked)
+                        {
+                            LogHeaderFields += ",SNR";
                         }
                         if (monitoring_views[slaveid].data_enable.cbMaxdelta.Checked)
                         {
@@ -953,6 +1004,12 @@ namespace TouchCommanderGenericNamespace
                         {
                             logFieldStr += "," + monitoring_views[slaveid].sensor_data[i].lbDelta.Text;
                         }
+                        if (monitoring_views[slaveid].data_enable.cbDelta.Checked &&
+                            monitoring_views[slaveid].data_enable.cbBaseline.Checked &&
+                            monitoring_views[slaveid].data_enable.cbSnr.Checked)
+                        {
+                            logFieldStr += "," + monitoring_views[slaveid].sensor_data[i].lbSnr.Text;
+                        }
                         if (monitoring_views[slaveid].data_enable.cbMaxdelta.Checked)
                         {
                             logFieldStr += "," + monitoring_views[slaveid].sensor_data[i].lbMaxdelta.Text;
@@ -982,6 +1039,25 @@ namespace TouchCommanderGenericNamespace
             if (!bMonitoringStarted)
             {
                 ClearMaxDelta();  // <----- ADD THIS LINE
+                for (int slave = 0; slave < no_of_slaves; slave++)
+                {
+                    for (int key = 0; key < keys_per_slave[slave]; key++)
+                    {
+                        nonTouchSampleCaptured[slave][key] = false;
+                        touchSampleCaptured[slave][key] = false;
+                        nonTouchRawSample[slave][key] = 0;
+                        touchRawSample[slave][key] = 0;
+                        nonTouchMinRaw[slave][key] = UInt16.MaxValue;
+                        nonTouchMaxRaw[slave][key] = 0;
+                        nonTouchRawSum[slave][key] = 0;
+                        nonTouchRawCount[slave][key] = 0;
+                        monitoring_views[slave].sensor_data[key].lbSnr.Text = "0.00";
+                        bool snrVisible = monitoring_views[slave].data_enable.cbSnr.Checked &&
+                                          monitoring_views[slave].data_enable.cbDelta.Checked &&
+                                          monitoring_views[slave].data_enable.cbBaseline.Checked;
+                        monitoring_views[slave].sensor_data[key].lbSnr.BackColor = snrVisible ? Color.White : Color.LightGray;
+                    }
+                }
                 bMonitoringStarted = true;
                 btnLogging.Enabled = false;
                 btnStart.Text = "Stop";
@@ -1000,6 +1076,7 @@ namespace TouchCommanderGenericNamespace
             for (int i = 0; i < no_of_slaves; i++)
             {
                 monitoring_views[i].data_enable.cbDelta.Enabled = !bMonitoringStarted;
+                monitoring_views[i].data_enable.cbSnr.Enabled = !bMonitoringStarted;
                 monitoring_views[i].data_enable.cbMaxdelta.Enabled = !bMonitoringStarted;
                 monitoring_views[i].data_enable.cbMaxdelta.Enabled = !bMonitoringStarted;
                 monitoring_views[i].data_enable.cbRaw.Enabled = !bMonitoringStarted;
@@ -1094,6 +1171,8 @@ namespace TouchCommanderGenericNamespace
                 for (int i = 0; i < keys_per_slave[slaveid]; i++)
                 {
                     monitoring_views[slaveid].sensor_data[i].lbBaseline.BackColor = cb.Checked ? default(Color) : Color.LightGray;
+                    bool snrVisible = cb.Checked && mon_param_enabled[slaveid].delta_enable && monitoring_views[slaveid].data_enable.cbSnr.Checked;
+                    monitoring_views[slaveid].sensor_data[i].lbSnr.BackColor = snrVisible ? default(Color) : Color.LightGray;
                 }
             }
             else if (name == "Delta")
@@ -1102,6 +1181,16 @@ namespace TouchCommanderGenericNamespace
                 for (int i = 0; i < keys_per_slave[slaveid]; i++)
                 {
                     monitoring_views[slaveid].sensor_data[i].lbDelta.BackColor = cb.Checked ? default(Color) : Color.LightGray;
+                    bool snrVisible = cb.Checked && mon_param_enabled[slaveid].baseline_enable && monitoring_views[slaveid].data_enable.cbSnr.Checked;
+                    monitoring_views[slaveid].sensor_data[i].lbSnr.BackColor = snrVisible ? default(Color) : Color.LightGray;
+                }
+            }
+            else if (name == "Snr")
+            {
+                for (int i = 0; i < keys_per_slave[slaveid]; i++)
+                {
+                    bool snrVisible = cb.Checked && mon_param_enabled[slaveid].delta_enable && mon_param_enabled[slaveid].baseline_enable;
+                    monitoring_views[slaveid].sensor_data[i].lbSnr.BackColor = snrVisible ? default(Color) : Color.LightGray;
                 }
             }
             else if (name == "Maxdelta")
@@ -1200,6 +1289,8 @@ namespace TouchCommanderGenericNamespace
                             {
                                 System.Diagnostics.Debug.WriteLine($"Error updating Tool MaxDelta: {ex.Message}");
                             }
+
+                            // SNR is updated when touch sample is captured (KEY_STATUS case).
                         }
                         break;
 
@@ -1233,6 +1324,29 @@ namespace TouchCommanderGenericNamespace
                     case update_data.KEY_STATUS:
                         //if (monitoring_views[current_slave].data_enable.cbKeystatus.Checked == true)
                         {
+                            if (!keystatus[i])
+                            {
+                                ushort raw = rawdata[i];
+                                if (raw < nonTouchMinRaw[current_slave][i]) nonTouchMinRaw[current_slave][i] = raw;
+                                if (raw > nonTouchMaxRaw[current_slave][i]) nonTouchMaxRaw[current_slave][i] = raw;
+                                nonTouchRawSum[current_slave][i] += raw;
+                                nonTouchRawCount[current_slave][i] += 1;
+                                nonTouchRawSample[current_slave][i] = (UInt16)(nonTouchRawSum[current_slave][i] / nonTouchRawCount[current_slave][i]);
+                            }
+                            else if (keystatus[i] && nonTouchRawCount[current_slave][i] > 0)
+                            {
+                                touchRawSample[current_slave][i] = rawdata[i];
+
+                                double signalCount = Math.Abs((double)touchRawSample[current_slave][i] - nonTouchRawSample[current_slave][i]);
+                                double noiseCount = Math.Max(1.0, (double)(nonTouchMaxRaw[current_slave][i] - nonTouchMinRaw[current_slave][i]));
+                                double snr = signalCount / noiseCount;
+                                if (monitoring_views[current_slave].data_enable.cbSnr.Checked)
+                                {
+                                    monitoring_views[current_slave].sensor_data[i].lbSnr.Text = String.Format("{0:F2}", snr);
+                                    monitoring_views[current_slave].sensor_data[i].lbSnr.BackColor = snr > 5.0 ? Color.LightGreen : Color.White;
+                                }
+                            }
+
                             // Always update for immediate response (no previous value check)
                             monitoring_views[current_slave].sensor_data[i].lbKeystatus.Text = String.Format("{0}", keystatus[i] == true ? "ON" : "OFF");
                             monitoring_views[current_slave].sensor_data[i].lbKeystatus.BackColor = keystatus[i] == true ? Color.LightGreen : default(Color);
@@ -1359,6 +1473,7 @@ namespace TouchCommanderGenericNamespace
                     for (int i = 0; i < no_of_slaves; i++)
                     {
                         monitoring_views[i].data_enable.cbDelta.Enabled = true;
+                        monitoring_views[i].data_enable.cbSnr.Enabled = true;
                         monitoring_views[i].data_enable.cbMaxdelta.Enabled = true;
                         monitoring_views[i].data_enable.cbMaxdelta.Enabled = true;
                         monitoring_views[i].data_enable.cbRaw.Enabled = true;
