@@ -659,6 +659,10 @@ namespace TouchCommanderGenericNamespace
             lbSnrCaptureInfo.Size = new Size(1500, 20);
             lbSnrCaptureInfo.ForeColor = Color.DarkBlue;
             lbSnrCaptureInfo.Visible = false;
+            lbSnrCaptureInfo.Text = "SNR Capture Info: Press Start, keep all keys released to capture non-touch sample.";
+            lbSnrCaptureInfo.Location = new Point(20, 45);
+            lbSnrCaptureInfo.Size = new Size(1500, 20);
+            lbSnrCaptureInfo.ForeColor = Color.DarkBlue;
             this.Controls.Add(lbSnrCaptureInfo);
 
             // Clear Max Delta Button
@@ -739,6 +743,18 @@ namespace TouchCommanderGenericNamespace
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // SNR
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F));  // MaxDelta
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75F));  // Status
+                monitoring_views[i].tableview.Size = new Size(600, 630);
+                monitoring_views[i].tableview.ColumnCount = 8;
+                monitoring_views[i].tableview.RowCount = 1;
+                //monitoring_views[i].tableview.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Logical Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Sensor Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Raw
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Ref
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Delta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // SNR
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // MaxDelta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Status
 
                 monitoring_views[i].tableview.RowStyles.Add(new RowStyle(SizeType.AutoSize, 80F));
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 0, 0);
@@ -1058,6 +1074,7 @@ namespace TouchCommanderGenericNamespace
                         monitoring_views[slave].sensor_data[key].lbSnr.BackColor = snrVisible ? Color.White : Color.LightGray;
                     }
                 }
+                lbSnrCaptureInfo.Text = "SNR Capture Info: Monitoring started. Keep keys released to capture non-touch sample.";
                 bMonitoringStarted = true;
                 btnLogging.Enabled = false;
                 btnStart.Text = "Stop";
@@ -1066,6 +1083,7 @@ namespace TouchCommanderGenericNamespace
             }
             else
             {
+                lbSnrCaptureInfo.Text = "SNR Capture Info: Monitoring stopped.";
                 bMonitoringStarted = false;
                 btnLogging.Enabled = true;
                 btnStart.Text = "Start";
@@ -1326,6 +1344,24 @@ namespace TouchCommanderGenericNamespace
                         {
                             if (!keystatus[i])
                             {
+                            if (!keystatus[i] && !nonTouchSampleCaptured[current_slave][i])
+                            {
+                                // keep sampling non-touch data to estimate baseline and noise (peak-to-peak)
+                                ushort raw = rawdata[i];
+                                if (raw < nonTouchMinRaw[current_slave][i]) nonTouchMinRaw[current_slave][i] = raw;
+                                if (raw > nonTouchMaxRaw[current_slave][i]) nonTouchMaxRaw[current_slave][i] = raw;
+                                nonTouchRawSum[current_slave][i] += raw;
+                                nonTouchRawCount[current_slave][i] += 1;
+
+                                if (nonTouchRawCount[current_slave][i] >= 5)
+                                {
+                                    nonTouchSampleCaptured[current_slave][i] = true;
+                                    nonTouchRawSample[current_slave][i] = (UInt16)(nonTouchRawSum[current_slave][i] / nonTouchRawCount[current_slave][i]);
+                                }
+                            }
+                            else if (!keystatus[i] && nonTouchSampleCaptured[current_slave][i] && !touchSampleCaptured[current_slave][i])
+                            {
+                                // continue refining non-touch noise window until first touch is captured
                                 ushort raw = rawdata[i];
                                 if (raw < nonTouchMinRaw[current_slave][i]) nonTouchMinRaw[current_slave][i] = raw;
                                 if (raw > nonTouchMaxRaw[current_slave][i]) nonTouchMaxRaw[current_slave][i] = raw;
@@ -1335,16 +1371,30 @@ namespace TouchCommanderGenericNamespace
                             }
                             else if (keystatus[i] && nonTouchRawCount[current_slave][i] > 0)
                             {
+                                nonTouchSampleCaptured[current_slave][i] = true;
+                                nonTouchRawSample[current_slave][i] = rawdata[i];
+                            }
+                            else if (keystatus[i] && nonTouchSampleCaptured[current_slave][i] && !touchSampleCaptured[current_slave][i])
+                            {
+                                touchSampleCaptured[current_slave][i] = true;
                                 touchRawSample[current_slave][i] = rawdata[i];
 
                                 double signalCount = Math.Abs((double)touchRawSample[current_slave][i] - nonTouchRawSample[current_slave][i]);
                                 double noiseCount = Math.Max(1.0, (double)(nonTouchMaxRaw[current_slave][i] - nonTouchMinRaw[current_slave][i]));
+                                double noiseCount = 1.0;
+                                if (maxDeltaValues.ContainsKey(current_slave) && maxDeltaValues[current_slave].ContainsKey(i) && maxDeltaValues[current_slave][i] > 0)
+                                {
+                                    noiseCount = maxDeltaValues[current_slave][i];
+                                }
                                 double snr = signalCount / noiseCount;
                                 if (monitoring_views[current_slave].data_enable.cbSnr.Checked)
                                 {
                                     monitoring_views[current_slave].sensor_data[i].lbSnr.Text = String.Format("{0:F2}", snr);
                                     monitoring_views[current_slave].sensor_data[i].lbSnr.BackColor = snr > 5.0 ? Color.LightGreen : Color.White;
                                 }
+
+                                lbSnrCaptureInfo.Text = string.Format("SNR Capture Info: Touch sample captured on Slave {0}, Key {1}.",
+                                    current_slave, i);
                             }
 
                             // Always update for immediate response (no previous value check)
@@ -1354,6 +1404,32 @@ namespace TouchCommanderGenericNamespace
 
                             if (i == (keyCount - 1))
                             {
+                                bool allNonTouchCaptured = true;
+                                for (int key = 0; key < keyCount; key++)
+                                {
+                                    if (!nonTouchSampleCaptured[current_slave][key])
+                                    {
+                                        allNonTouchCaptured = false;
+                                        break;
+                                    }
+                                }
+                                if (allNonTouchCaptured)
+                                {
+                                    bool anyTouchCaptured = false;
+                                    for (int key = 0; key < keyCount; key++)
+                                    {
+                                        if (touchSampleCaptured[current_slave][key])
+                                        {
+                                            anyTouchCaptured = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!anyTouchCaptured)
+                                    {
+                                        lbSnrCaptureInfo.Text = string.Format("SNR Capture Info: Non-touch sample captured for Slave {0}. Press key to capture touch sample.", current_slave);
+                                    }
+                                }
                                 log_data_handler();
                             }
                         }
