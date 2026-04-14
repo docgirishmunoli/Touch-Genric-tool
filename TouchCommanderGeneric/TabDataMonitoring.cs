@@ -738,6 +738,18 @@ namespace TouchCommanderGenericNamespace
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // SNR
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F));  // MaxDelta
                 monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75F));  // Status
+                monitoring_views[i].tableview.Size = new Size(600, 630);
+                monitoring_views[i].tableview.ColumnCount = 8;
+                monitoring_views[i].tableview.RowCount = 1;
+                //monitoring_views[i].tableview.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Logical Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // Sensor Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Raw
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Ref
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Delta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // SNR
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));  // MaxDelta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));  // Status
 
                 monitoring_views[i].tableview.RowStyles.Add(new RowStyle(SizeType.AutoSize, 80F));
                 monitoring_views[i].tableview.Controls.Add(new Label() { Text = "", TextAlign = ContentAlignment.MiddleCenter }, 0, 0);
@@ -1349,6 +1361,8 @@ namespace TouchCommanderGenericNamespace
                                 nonTouchRawSum[current_slave][i] += raw;
                                 nonTouchRawCount[current_slave][i] += 1;
                                 nonTouchRawSample[current_slave][i] = (UInt16)(nonTouchRawSum[current_slave][i] / nonTouchRawCount[current_slave][i]);
+                                nonTouchSampleCaptured[current_slave][i] = true;
+                                nonTouchRawSample[current_slave][i] = rawdata[i];
                             }
                             else if (keystatus[i] && nonTouchSampleCaptured[current_slave][i] && !touchSampleCaptured[current_slave][i])
                             {
@@ -1357,6 +1371,11 @@ namespace TouchCommanderGenericNamespace
 
                                 double signalCount = Math.Abs((double)touchRawSample[current_slave][i] - nonTouchRawSample[current_slave][i]);
                                 double noiseCount = Math.Max(1.0, (double)(nonTouchMaxRaw[current_slave][i] - nonTouchMinRaw[current_slave][i]));
+                                double noiseCount = 1.0;
+                                if (maxDeltaValues.ContainsKey(current_slave) && maxDeltaValues[current_slave].ContainsKey(i) && maxDeltaValues[current_slave][i] > 0)
+                                {
+                                    noiseCount = maxDeltaValues[current_slave][i];
+                                }
                                 double snr = signalCount / noiseCount;
                                 if (monitoring_views[current_slave].data_enable.cbSnr.Checked)
                                 {
