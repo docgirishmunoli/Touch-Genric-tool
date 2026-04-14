@@ -654,6 +654,11 @@ namespace TouchCommanderGenericNamespace
             this.Controls.Add(lbLogTimer);
 
             lbSnrCaptureInfo = new Label();
+            lbSnrCaptureInfo.Text = "";
+            lbSnrCaptureInfo.Location = new Point(20, 45);
+            lbSnrCaptureInfo.Size = new Size(1500, 20);
+            lbSnrCaptureInfo.ForeColor = Color.DarkBlue;
+            lbSnrCaptureInfo.Visible = false;
             lbSnrCaptureInfo.Text = "SNR Capture Info: Press Start, keep all keys released to capture non-touch sample.";
             lbSnrCaptureInfo.Location = new Point(20, 45);
             lbSnrCaptureInfo.Size = new Size(1500, 20);
@@ -1337,6 +1342,8 @@ namespace TouchCommanderGenericNamespace
                     case update_data.KEY_STATUS:
                         //if (monitoring_views[current_slave].data_enable.cbKeystatus.Checked == true)
                         {
+                            if (!keystatus[i])
+                            {
                             if (!keystatus[i] && !nonTouchSampleCaptured[current_slave][i])
                             {
                                 // keep sampling non-touch data to estimate baseline and noise (peak-to-peak)
@@ -1361,6 +1368,9 @@ namespace TouchCommanderGenericNamespace
                                 nonTouchRawSum[current_slave][i] += raw;
                                 nonTouchRawCount[current_slave][i] += 1;
                                 nonTouchRawSample[current_slave][i] = (UInt16)(nonTouchRawSum[current_slave][i] / nonTouchRawCount[current_slave][i]);
+                            }
+                            else if (keystatus[i] && nonTouchRawCount[current_slave][i] > 0)
+                            {
                                 nonTouchSampleCaptured[current_slave][i] = true;
                                 nonTouchRawSample[current_slave][i] = rawdata[i];
                             }
