@@ -722,6 +722,18 @@ namespace TouchCommanderGenericNamespace
 
                 monitoring_views[i].tableview = new TableLayoutPanel();
                 monitoring_views[i].tableview.Location = new Point(40, 70);
+                monitoring_views[i].tableview.Size = new Size(650, 630);
+                monitoring_views[i].tableview.ColumnCount = 8;
+                monitoring_views[i].tableview.RowCount = 1;
+                //monitoring_views[i].tableview.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));  // Logical Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));  // Sensor Id
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // Raw
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // Ref
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // Delta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70F));  // SNR
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F));  // MaxDelta
+                monitoring_views[i].tableview.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75F));  // Status
                 monitoring_views[i].tableview.Size = new Size(600, 630);
                 monitoring_views[i].tableview.ColumnCount = 8;
                 monitoring_views[i].tableview.RowCount = 1;
